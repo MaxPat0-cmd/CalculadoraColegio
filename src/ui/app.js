@@ -1,5 +1,6 @@
 import { h, clear } from './dom.js';
 import { Store, MemoryAdapter } from '../store.js';
+import { APP_VERSION } from '../models.js';
 import { createDefaultRegistry } from '../evaluation.js';
 import { loadUi, normalizeConfig, saveUi } from './config.js';
 import { captureStudentView } from './views/captureStudent.js';
@@ -32,6 +33,7 @@ const ROUTES = [
   ['respaldos', 'Respaldos', backupView],
 ];
 
+document.getElementById('app-version').textContent = APP_VERSION;
 const main = document.getElementById('main');
 const nav = document.getElementById('nav');
 let current = null;

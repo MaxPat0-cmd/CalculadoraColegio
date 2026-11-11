@@ -1,4 +1,4 @@
-# Arquitectura — Calculadora Académica Alzate v0.1
+# Arquitectura — Calculadora Académica Alzate v1.2
 
 ## Tecnología elegida y por qué
 
@@ -55,7 +55,7 @@ declaran explícitamente que no hay calificación final oficial.
 
 ### 5. Almacenamiento y limitaciones
 `localStorage` con un único documento JSON versionado (`schemaVersion`). El adaptador es intercambiable
-(`MemoryAdapter` en pruebas). Limitaciones documentadas también en la pantalla *Respaldos*:
+(`MemoryAdapter` en pruebas). Las claves conservan «v0.1» para no perder datos de versiones anteriores. Limitaciones (también en la pantalla *Respaldos*):
 
 - Datos por navegador/perfil/dominio; borrar datos del sitio los elimina. Sin sincronización entre equipos.
 - ~5 MB de capacidad (sobra para el demo; no para un colegio completo con varios ciclos).

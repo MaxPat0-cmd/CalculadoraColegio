@@ -1,14 +1,22 @@
-# Calculadora Académica Alzate — v0.1 (prototipo demostrativo)
+# Calculadora Académica Alzate — v1.2 (demostrativo)
 
 Aplicación web para el **Colegio Alzate** (primaria, secundaria y CCH) que demuestra el flujo completo:
 **captura de calificaciones → almacenamiento → consolidación por alumno → reportes**.
 
-> ⚠️ **Versión 0.1 = prototipo.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
+> ⚠️ **Versión 1.2 = demostrativa.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
 > institucionales y todos los documentos generados llevan la leyenda *«DOCUMENTO DEMOSTRATIVO — NO OFICIAL»*.
 > **No capturar datos reales de menores.**
 
 Este proyecto es **independiente**: no comparte código, historial ni repositorio con la calculadora universitaria
 usada solo como referencia conceptual.
+
+## Novedades de la versión 1.2
+- Reporte individual en **PDF y Excel** con el formato del reporte de referencia: título por nivel
+  («COLEGIO ALZATE C.C.H.»), encabezado azul, filas alternadas, columnas centradas, observaciones y línea de firma
+  de Orientación / Control Escolar, más la leyenda de documento demostrativo.
+- La versión aparece en el encabezado de la aplicación. Si tras publicar no ves los cambios, recarga sin caché
+  (`Ctrl + F5`, o `Cmd + Shift + R` en Mac).
+- Los datos guardados por versiones anteriores se conservan (las claves de almacenamiento no cambian).
 
 ## Cómo ejecutarlo
 
@@ -42,12 +50,12 @@ Alternativa: `python3 -m http.server 8080`.)
 | Expediente individual (id/matrícula, nivel, grado, grupo, ciclo, registros) | ✅ Implementada |
 | Distinción *pendiente* / *desconocido* / *0* | ✅ Implementada |
 | Panel de Control Escolar: búsqueda, incompletos, consolidación verificada, incidencias | ✅ Implementada |
-| Exportación PDF individual y Excel (individual y concentrado) | ✅ Implementada (formato **demostrativo**) |
+| Exportación PDF y Excel individual con el formato del reporte de referencia, y Excel concentrado | ✅ Implementada (formato **demostrativo**, no oficial) |
 | Almacenamiento local + respaldos JSON con vista previa de conflictos y deshacer | ✅ Implementada |
 | Motor de evaluación configurable | 🟡 **Solo el contrato y la infraestructura**; sin ninguna regla definida |
 | Reglas de evaluación de primaria / secundaria / CCH (ponderaciones, promedios, aprobación, exenciones) | ⏳ **Pendiente de validación institucional** |
 | Escala de captura 0–10 | 🟡 Valor **demostrativo** configurable; solo limita lo que se puede teclear |
-| Formato oficial de boleta / reporte | ⏳ Pendiente (el PDF actual es una referencia mínima, no el formato oficial) |
+| Formato oficial de boleta / reporte | ⏳ Pendiente (el PDF/Excel siguen un reporte de referencia, no un formato oficial) |
 | Usuarios, permisos por docente, bitácora, servidor y base de datos | ⏳ Fuera del alcance de v0.1 |
 | Calificaciones finales, promedios o resultados oficiales | 🚫 **No se muestran** mientras no exista una regla validada |
 

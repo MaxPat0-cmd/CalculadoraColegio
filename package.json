@@ -1,7 +1,7 @@
 {
   "name": "calculadora-academica-alzate",
-  "version": "0.1.0",
-  "description": "Prototipo 0.1 de captura y consolidación de calificaciones del Colegio Alzate (datos ficticios).",
+  "version": "1.2.0",
+  "description": "Versión 1.2 de captura y consolidación de calificaciones del Colegio Alzate (datos ficticios).",
   "private": true,
   "type": "module",
   "scripts": {
