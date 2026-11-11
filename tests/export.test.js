@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeStore, FIXED_NOW } from './helpers.js';
-import { buildStudentReport, studentReportToPdf, studentReportToXlsx, concentradoToXlsx, LEGEND, safeFileName } from '../src/export/reports.js';
+import { institutionTitle, buildStudentReport, studentReportToPdf, studentReportToXlsx, concentradoToXlsx, LEGEND, safeFileName } from '../src/export/reports.js';
 import { readZip, createZip } from '../src/export/zip.js';
 import { buildXlsx, safeSheetName } from '../src/export/xlsx.js';
 import { PdfDocument, wrapText } from '../src/export/pdf.js';
@@ -111,4 +111,17 @@ test('PdfDocument escapa paréntesis y barras', () => {
   const d = new PdfDocument();
   d.text(10, 10, 'a(b)c\\d');
   assert.ok(latin1(d.finish()).includes('(a\\(b\\)c\\\\d)'));
+});
+
+test('el PDF sigue el formato de referencia: título por nivel, firma y leyenda', () => {
+  assert.equal(institutionTitle('Colegio Alzate', 'cch', 'CCH'), 'COLEGIO ALZATE C.C.H.');
+  assert.equal(institutionTitle('Colegio Alzate', 'primaria', 'Primaria'), 'COLEGIO ALZATE PRIMARIA');
+  const store = makeStore();
+  const st = store.state.students.find((s) => s.levelId === 'cch');
+  const rep = buildStudentReport(store.state, st.id, { now: FIXED_NOW });
+  assert.equal(rep.title, 'COLEGIO ALZATE C.C.H.');
+  const s = latin1(studentReportToPdf(rep));
+  for (const t of ['COLEGIO ALZATE C.C.H.', 'REPORTE INDIVIDUAL DE CALIFICACIONES Y ASISTENCIA', 'Alumno\\(a\\):', 'Orientaci\\363n / Control Escolar', 'Matr\\355cula']) {
+    assert.ok(s.includes(t.replaceAll('\\\\', '\\')), t);
+  }
 });
