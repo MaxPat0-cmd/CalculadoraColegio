@@ -66,7 +66,7 @@ export function backupView(ctx) {
     };
 
     put(root, 
-      h('section', { class: 'intro' }, h('h2', null, 'Respaldos y almacenamiento'),
+      h('section', { class: 'intro' },
         h('p', null, 'Los datos viven solo en este navegador. Exporta respaldos periódicos; al importar, el sistema conserva las relaciones entre alumnos, asignaturas y evaluaciones.')),
       h('section', { class: 'card' }, h('h3', null, 'Exportar'), h('p', null, 'Descarga un archivo JSON con alumnos, catálogos y registros, con suma de verificación.'), exportBtn),
       h('section', { class: 'card' }, h('h3', null, 'Importar'),
@@ -76,7 +76,7 @@ export function backupView(ctx) {
       store.hasUndoSnapshot() ? h('section', { class: 'card' }, h('h3', null, 'Deshacer'),
         h('p', null, 'Se guardó una copia automática justo antes de la última importación.'),
         h('button', { class: 'btn', type: 'button', onclick: () => { const r = store.undoImport(); toast(r.ok ? 'Importación deshecha' : r.error, r.ok ? 'ok' : 'error'); render(); } }, 'Deshacer última importación')) : null,
-      h('section', { class: 'card' }, h('h3', null, 'Almacenamiento (limitaciones de v1.3)'),
+      h('section', { class: 'card' }, h('h3', null, 'Almacenamiento (limitaciones de v1.4)'),
         h('ul', null,
           h('li', null, `Se guarda en localStorage del navegador (clave «${STORAGE_KEY}»), por navegador, perfil y dominio; limpiar datos del sitio lo borra.`),
           h('li', null, 'Capacidad aproximada de 5 MB; sin cifrado, sin usuarios ni permisos, sin historial de cambios.'),

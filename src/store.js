@@ -120,6 +120,8 @@ export class Store {
   addCatalogItem(kind, item) { return this.mutate((s) => cat.addCatalogItem(s, kind, item)); }
   updateCatalogItem(kind, id, patch) { return this.mutate((s) => cat.updateCatalogItem(s, kind, id, patch)); }
   removeCatalogItem(kind, id) { return this.mutate((s) => cat.removeCatalogItem(s, kind, id)); }
+  addLevel(name) { return this.mutate((s) => cat.addLevel(s, name)); }
+  removeLevel(id) { return this.mutate((s) => cat.removeLevel(s, id)); }
   renameLevel(id, name) { return this.mutate((s) => cat.renameLevel(s, id, name)); }
   addStudent(st) { return this.mutate((s) => cat.addStudent(s, st)); }
   updateStudent(id, patch) { return this.mutate((s) => cat.updateStudent(s, id, patch)); }

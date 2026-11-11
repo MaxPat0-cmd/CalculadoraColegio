@@ -1,4 +1,4 @@
-# Arquitectura — Calculadora Académica Alzate v1.3
+# Arquitectura — Calculadora Académica Alzate v1.4
 
 ## Tecnología elegida y por qué
 
@@ -82,6 +82,20 @@ e icono** (no solo color), errores asociados al campo con `role="alert"`, aviso 
 tema claro/oscuro automático, tablas con desplazamiento horizontal y diseño verificado en ancho de tableta (768 px).
 Captura por teclado: `Enter`/`Mayús+Enter`/`↑`/`↓` para moverse entre filas; guardado al confirmar o salir del campo.
 
+## Onboarding y perfil (v1.4)
+- `src/onboarding.js` (puro, probado): roles, opciones de nivel, `ensureLevel`, modalidad y pantalla de arranque.
+- Rol → **Docente** (pregunta nivel y, si hay varios, quién eres), **Control Escolar** o **Explorar**.
+- *Bachillerato* se enlaza con el nivel CCH del catálogo. *Preescolar*, *Universidad* u *Otro* se crean **vacíos**: no se
+  inventan grupos, alumnos ni reglas; la pantalla de Inicio muestra una lista de pasos para configurarlos.
+- Primaria arranca en captura **por alumno** (titular); el resto, **por asignatura**.
+- El perfil se guarda por dispositivo (`alzate-profile-v1`), no es una cuenta ni forma parte de los respaldos.
+
+## Estilo: Liquid Glass sobre pasteles (v1.4)
+Fondo de malla pastel fijo + materiales translúcidos (`backdrop-filter: blur() saturate()`) con reflejo especular
+(`radial-gradient` arriba-izquierda), borde de luz (`inset` claro) y sombras en capas. Jerarquía por material: barra y
+tarjetas (delgado) < hojas y onboarding (grueso). Fallbacks: `prefers-reduced-transparency`, `prefers-contrast: more` y
+navegadores sin `backdrop-filter` usan superficies sólidas. Logo: texto «UA» en serif con degradado (`background-clip: text`).
+
 ## Movimiento y sensación de uso
 Aplicación de los principios de *apple-design* (WWDC *Designing Fluid Interfaces*):
 
@@ -97,7 +111,7 @@ Aplicación de los principios de *apple-design* (WWDC *Designing Fluid Interface
 | Tipografía por tamaño | tracking negativo en títulos, positivo en texto pequeño; leading inverso al tamaño |
 | Accesibilidad | `prefers-reduced-motion` / `-transparency` / `-contrast`; `inert` y foco devuelto en hojas |
 
-Solo se animan `transform` y `opacity`. La física (`src/physics.js`) no depende del DOM y está probada con un reloj
+Solo se animan `transform` y `opacity`. En v1.4 se añadieron `stagger`, `countTo`, `slideOut` y el control segmentado (`ui/segmented.js`). La física (`src/physics.js`) no depende del DOM y está probada con un reloj
 simulado; `src/ui/motion.js` la conecta al DOM y a `prefers-reduced-motion`. No hay carruseles ni drawers en la app:
 la hoja del expediente es el único componente de gestos.
 

@@ -96,9 +96,14 @@ export function catalogsView(ctx) {
       const min = h('input', { type: 'number', step: 'any', value: state.scale.min });
       const max = h('input', { type: 'number', step: 'any', value: state.scale.max });
       const cyc = h('input', { type: 'text', placeholder: '2027-2028' });
+      const lvName = h('input', { type: 'text', placeholder: 'Preescolar, Universidad…', maxLength: 40 });
       put(body, 
         h('h3', null, 'Niveles educativos'),
-        state.catalogs.levels.map((l) => field(`Nombre del nivel (${l.id})`, h('input', { type: 'text', value: l.name, onchange: (e) => report(store.renameLevel(l.id, e.target.value), 'Guardado') }))),
+        h('div', { class: 'level-list' }, state.catalogs.levels.map((l) => h('div', { class: 'level-row' },
+          field(`Nombre (${l.id})`, h('input', { type: 'text', value: l.name, onchange: (e) => report(store.renameLevel(l.id, e.target.value), 'Guardado') })),
+          h('button', { class: 'btn small danger', type: 'button', onclick: () => { if (confirm('¿Eliminar este nivel?')) report(store.removeLevel(l.id), 'Nivel eliminado'); } }, 'Eliminar')))),
+        h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); report(store.addLevel(lvName.value), 'Nivel agregado'); } },
+          h('h4', null, 'Agregar nivel'), field('Nombre', lvName), h('button', { class: 'btn primary', type: 'submit' }, 'Agregar nivel')),
         h('h3', null, 'Escala de captura (demostrativa)'),
         h('p', { class: 'banner info' }, 'Solo delimita qué números se aceptan al capturar. No es una regla de aprobación ni de evaluación: esas reglas aún no existen en el sistema.'),
         h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); report(store.setScale(Number(min.value), Number(max.value)), 'Escala actualizada'); } },
@@ -114,7 +119,7 @@ export function catalogsView(ctx) {
     }
 
     put(root, 
-      h('section', { class: 'intro' }, h('h2', null, 'Catálogos'), h('p', null, 'Los catálogos iniciales son demostrativos y editables. Los elementos con registros asociados no se pueden eliminar ni mover.')),
+      h('section', { class: 'intro' }, h('p', null, 'Los catálogos iniciales son demostrativos y editables. Los elementos con registros asociados no se pueden eliminar ni mover.')),
       h('div', { class: 'subtabs', role: 'tablist' }, TABS.map(([id, label]) => h('button', { class: `subtab${id === tab ? ' active' : ''}`, role: 'tab', 'aria-selected': id === tab, type: 'button', onclick: () => { tab = id; ctx.ui.catTab = id; render(); } }, label))),
       body);
   };

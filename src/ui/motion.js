@@ -14,27 +14,56 @@ function progressSpring(apply, onRest) {
   return makeSpring({ value: 0, precision: 0.002, onUpdate: apply, onRest });
 }
 
-/** Entrada de una vista: sube 8 px y aparece. Con movimiento reducido solo hay fundido breve. */
-export function fadeUp(el) {
+/** Entrada: sube `dy` px y aparece, con retardo opcional. Con movimiento reducido solo hay fundido breve. */
+export function fadeUp(el, { delay = 0, dy = 8, response = 0.38 } = {}) {
   const rm = reduced();
   const s = progressSpring((p) => {
     el.style.opacity = String(clamp(p * 1.4, 0, 1));
-    el.style.transform = rm ? '' : `translate3d(0, ${(1 - p) * 8}px, 0)`;
+    el.style.transform = rm ? '' : `translate3d(0, ${(1 - p) * dy}px, 0)`;
   }, () => { el.style.opacity = ''; el.style.transform = ''; });
   s.set(0);
-  s.to(1, { damping: 1, response: rm ? 0.2 : 0.38, allowReduced: true });
+  const go = () => s.to(1, { damping: 1, response: rm ? 0.2 : response, allowReduced: true });
+  if (delay > 0 && !rm) setTimeout(go, delay); else go();
   return s;
 }
 
-/** Entrada direccional (siguiente alumno entra desde la derecha, anterior desde la izquierda): trayectoria simétrica. */
-export function slideIn(el, dir = 1) {
+/** Aparición escalonada de una lista de elementos (tarjetas, filas): cada uno entra un instante después del anterior. */
+export function stagger(els, { step = 45, max = 10, dy = 14 } = {}) {
+  [...els].slice(0, max).forEach((el, i) => fadeUp(el, { delay: i * step, dy, response: 0.46 }));
+}
+
+/** Entrada direccional (siguiente entra por la derecha, anterior por la izquierda): trayectoria simétrica. */
+export function slideIn(el, dir = 1, dist = 32) {
   const rm = reduced();
   const s = progressSpring((p) => {
     el.style.opacity = String(clamp(p * 1.6, 0, 1));
-    el.style.transform = rm ? '' : `translate3d(${(1 - p) * dir * 32}px, 0, 0)`;
+    el.style.transform = rm ? '' : `translate3d(${(1 - p) * dir * dist}px, 0, 0)`;
   }, () => { el.style.opacity = ''; el.style.transform = ''; });
   s.set(0);
   s.to(1, { damping: 1, response: rm ? 0.2 : 0.36, allowReduced: true });
+  return s;
+}
+
+/** Salida direccional por el lado contrario al de la entrada; llama `done` al terminar (o al instante con reduce motion). */
+export function slideOut(el, dir = -1, done = () => {}, dist = 32) {
+  const rm = reduced();
+  const s = makeSpring({
+    value: 1, precision: 0.004,
+    onUpdate: (p) => { el.style.opacity = String(clamp(p * 1.4, 0, 1)); el.style.transform = rm ? '' : `translate3d(${(1 - p) * dir * dist}px, 0, 0)`; },
+    onRest: (p) => { if (p === 0) done(); },
+  });
+  s.set(1);
+  s.to(0, { damping: 1, response: rm ? 0.14 : 0.26, allowReduced: true });
+  return s;
+}
+
+/** Cuenta animada hasta `to` con un resorte (micro-interacción de las cifras). Con reduce motion muestra el valor final. */
+export function countTo(el, to, { from = 0, response = 0.8 } = {}) {
+  el.textContent = String(Math.round(reduced() ? to : from));
+  if (reduced() || from === to) { el.textContent = String(to); return null; }
+  const s = makeSpring({ value: from, precision: 0.2, onUpdate: (v) => { el.textContent = String(Math.round(v)); }, onRest: () => { el.textContent = String(to); } });
+  s.set(from);
+  s.to(to, { damping: 1, response });
   return s;
 }
 
@@ -47,7 +76,7 @@ export function pop(el) {
 }
 
 // ---- Respuesta inmediata al presionar ------------------------------------------------------------------------
-const PRESS = '.btn, .tab, .subtab, summary';
+const PRESS = '.btn, .tab, .subtab, summary, .choice, .chip, .seg-btn, .profile-chip';
 const springs = new WeakMap();
 const active = new Map(); // pointerId -> elemento presionado
 

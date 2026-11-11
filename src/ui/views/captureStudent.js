@@ -27,9 +27,6 @@ export function captureStudentView(ctx) {
     });
 
     put(root, 
-      h('section', { class: 'intro' },
-        h('h2', null, 'Captura por alumno'),
-        h('p', null, 'Registra todas las asignaturas de un alumno en una sola pantalla. Pensada para profesores titulares de primaria.')),
       configBar(ctx, { showSubject: false, onChange: render }),
       students.length === 0
         ? h('p', { class: 'banner warn' }, 'No hay alumnos en este grupo para el ciclo vigente.')

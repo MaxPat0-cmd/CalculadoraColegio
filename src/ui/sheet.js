@@ -13,7 +13,7 @@ let uid = 0;
 
 export const sheetKey = () => current?.key ?? null;
 
-const BACKGROUND = ['header.topbar', '#nav', '#main'];
+const BACKGROUND = ['header.shell', '.demo-strip', '#main'];
 
 export function openSheet({ key, title, render, onDismiss, returnFocus }) {
   if (current) closeSheet({ silent: true, instant: true });
