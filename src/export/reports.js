@@ -2,7 +2,7 @@
 import { consolidateStudent } from '../consolidation.js';
 import { formatField, FIELD } from '../models.js';
 import { PdfDocument, textWidth, wrapText } from './pdf.js';
-import { buildXlsx } from './xlsx.js';
+import { buildXlsx, XS } from './xlsx.js';
 
 export const LEGEND = 'DOCUMENTO DEMOSTRATIVO — NO OFICIAL';
 /** Título del encabezado según el nivel: «COLEGIO ALZATE C.C.H.», «… PRIMARIA», «… SECUNDARIA». */
@@ -176,9 +176,49 @@ const NOTICE_ROWS = [
 
 const WIDTHS = [18, 30, 12, 8, 10, 14, 28, 34, 12, 14, 18, 10, 40];
 
+/**
+ * Excel individual con el mismo diseño que el PDF de referencia (hoja «Expediente»), una hoja «Datos» plana
+ * para filtrar/ordenar y una hoja «Aviso».
+ */
 export function studentReportToXlsx(report) {
+  const s = report.student;
+  const N = 5; // columnas de la tabla
+  const blank = (style) => Array.from({ length: N }, () => ({ v: null, s: style }));
+  const rows = []; const merges = []; const heights = {};
+  const addRow = (cells, { merge = false, height } = {}) => {
+    rows.push(cells);
+    const r = rows.length;
+    if (merge) merges.push(`A${r}:${String.fromCharCode(64 + N)}${r}`);
+    if (height) heights[r - 1] = height;
+  };
+
+  addRow([{ v: report.title, s: XS.TITLE }, ...blank(XS.TITLE).slice(1)], { merge: true, height: 28 });
+  addRow([{ v: 'REPORTE INDIVIDUAL DE CALIFICACIONES Y ASISTENCIA', s: XS.SUBTITLE }, ...blank(XS.SUBTITLE).slice(1)], { merge: true, height: 20 });
+  addRow([{ v: `${report.legend} · datos ficticios`, s: XS.LEGEND }, ...blank(XS.LEGEND).slice(1)], { merge: true, height: 20 });
+  addRow([]);
+  for (const [k, v] of [['Alumno(a):', s.name], ['Matrícula:', s.id], ['Grupo:', s.group], ['Nivel:', s.level], ['Ciclo escolar:', s.cycle]]) {
+    addRow([{ v: k, s: XS.LABEL }, v]);
+  }
+  addRow([]);
+  const headRow = rows.length;
+  addRow(['Asignatura', 'Calificación', 'Faltas', 'Periodo', 'Observaciones'].map((t) => ({ v: t, s: XS.TH })), { height: 22 });
+  report.rows.forEach((r, i) => {
+    const z = i % 2 === 1;
+    const left = z ? XS.TDZ : XS.TD; const mid = z ? XS.TDCZ : XS.TDC;
+    addRow([{ v: r.subject, s: left }, { v: r.gradeNumber ?? r.grade, s: mid }, { v: r.absencesNumber ?? r.absences, s: mid }, { v: r.period, s: left }, { v: r.notes, s: left }], { height: r.notes.length > 45 ? 32 : 20 });
+  });
+  addRow([]);
+  const note = (text, h) => { addRow([{ v: text, s: XS.NOTE }, ...blank(XS.NOTE).slice(1)], { merge: true, height: h }); };
+  note(`Observaciones: «Pendiente» indica que el dato aún no se captura; «Desconocido», que se declaró como no disponible; 0 es una calificación válida. Registros completos: ${report.summary.complete} de ${report.summary.expected}.`, 28);
+  note(`${report.legendDetail} Documento informativo: no constituye boleta oficial ni calificación final. Verificar contra las actas originales antes de su entrega.`, 28);
+  addRow([]); addRow([]);
+  addRow([{ v: null, s: XS.SIGN }, { v: null, s: XS.SIGN }]);
+  addRow(['Orientación / Control Escolar']);
+  void headRow;
+
   return buildXlsx([
-    { name: 'Expediente', headerRows: 1, colWidths: WIDTHS, rows: [XLSX_HEADERS, ...reportToRows(report)] },
+    { name: 'Expediente', rows, merges, rowHeights: heights, colWidths: [38, 15, 11, 14, 40] },
+    { name: 'Datos', headerRows: 1, colWidths: WIDTHS, rows: [XLSX_HEADERS, ...reportToRows(report)] },
     { name: 'Aviso', rows: [...NOTICE_ROWS, [], ['Institución', report.institution], ['Generado', report.generatedAt]] },
   ]);
 }

@@ -1,6 +1,6 @@
 // Motor de evaluación configurable.
 //
-// IMPORTANTE (v0.1): NO existen reglas institucionales validadas. Este módulo solo define el contrato para
+// IMPORTANTE (v1.2): NO existen reglas institucionales validadas. Este módulo solo define el contrato para
 // incorporarlas después. Por defecto cada nivel usa "captura directa": se muestra lo capturado y NADA se calcula.
 // Una calificación calculada se distingue siempre de una capturada y jamás se presenta como oficial
 // salvo que su regla esté marcada explícitamente como validada.

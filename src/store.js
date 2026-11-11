@@ -1,4 +1,4 @@
-// Persistencia local. Estrategia v0.1: un único documento JSON en localStorage del navegador (con adaptador
+// Persistencia local. Estrategia v1.2: un único documento JSON en localStorage del navegador (con adaptador
 // intercambiable para pruebas). Un solo mapa `records` indexado por clave natural garantiza que las capturas por
 // alumno y por asignatura usen los mismos registros: no hay copias que sincronizar ni duplicados posibles.
 import { createDemoState } from './demoData.js';
@@ -7,6 +7,7 @@ import { validateRecord } from './validation.js';
 import * as cat from './catalogs.js';
 import { createBackup, serializeBackup, parseBackup, planImport, applyImport, finalizeImport } from './backup.js';
 
+// Las claves conservan «v0.1» a propósito: así los datos guardados por versiones anteriores siguen disponibles.
 export const STORAGE_KEY = 'alzate-calculadora-v0.1';
 export const SNAPSHOT_KEY = 'alzate-calculadora-v0.1-antes-de-importar';
 
