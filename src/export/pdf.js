@@ -97,7 +97,7 @@ export class PdfDocument {
       kids.push(`${pId} 0 R`);
     }
     objs[1] = `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${kids.length} >>`;
-    const infoId = add(`<< /Title ${pdfString(this.title)} /Producer (Calculadora Academica Alzate 1.4) >>`);
+    const infoId = add(`<< /Title ${pdfString(this.title)} /Producer (Calculadora Academica Alzate 1.5) >>`);
 
     let out = '%PDF-1.4\n';
     const offsets = [];

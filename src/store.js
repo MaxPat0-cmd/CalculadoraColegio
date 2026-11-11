@@ -2,13 +2,15 @@
 // intercambiable para pruebas). Un solo mapa `records` indexado por clave natural garantiza que las capturas por
 // alumno y por asignatura usen los mismos registros: no hay copias que sincronizar ni duplicados posibles.
 import { createDemoState } from './demoData.js';
-import { createRecord, recordKey, SCHEMA_VERSION, pendingField } from './models.js';
+import { createRecord, recordKey, SCHEMA_VERSION, APP_VERSION, pendingField } from './models.js';
 import { validateRecord } from './validation.js';
 import * as cat from './catalogs.js';
 import { createBackup, serializeBackup, parseBackup, planImport, applyImport, finalizeImport } from './backup.js';
+import { stripUnsupportedLevels, describeRemoved } from './migrate.js';
 
 // Las claves conservan «v0.1» a propósito: así los datos guardados por versiones anteriores siguen disponibles.
 export const STORAGE_KEY = 'alzate-calculadora-v0.1';
+export const MIGRATION_KEY = 'alzate-calculadora-v0.1-antes-de-migrar';
 export const SNAPSHOT_KEY = 'alzate-calculadora-v0.1-antes-de-importar';
 
 export class MemoryAdapter {
@@ -25,6 +27,7 @@ export class Store {
     this.seed = seed;
     this.listeners = new Set();
     this.loadWarning = null;
+    this.notice = null; // aviso informativo (p. ej. migración); la interfaz lo muestra una vez
     this.state = null;
     this.load();
   }
@@ -41,6 +44,18 @@ export class Store {
     }
     try {
       const parsed = JSON.parse(raw);
+      if (parsed.schemaVersion === 1) {
+        // Esquema 1 → 2: se conserva el documento original antes de retirar los niveles no admitidos.
+        try { this.adapter.setItem(MIGRATION_KEY, raw); } catch { /* sin espacio */ }
+        const removed = stripUnsupportedLevels(parsed);
+        parsed.schemaVersion = SCHEMA_VERSION;
+        parsed.appVersion = APP_VERSION;
+        this.state = parsed;
+        this.persist();
+        const what = describeRemoved(removed);
+        if (what) this.notice = `Esta calculadora ahora atiende solo Primaria y Secundaria. Se retiraron: ${what}. Se conservó una copia de tus datos anteriores en este navegador.`;
+        return;
+      }
       if (parsed.schemaVersion !== SCHEMA_VERSION) throw new Error(`Esquema ${parsed.schemaVersion} no soportado`);
       this.state = parsed;
     } catch (e) {
@@ -120,8 +135,6 @@ export class Store {
   addCatalogItem(kind, item) { return this.mutate((s) => cat.addCatalogItem(s, kind, item)); }
   updateCatalogItem(kind, id, patch) { return this.mutate((s) => cat.updateCatalogItem(s, kind, id, patch)); }
   removeCatalogItem(kind, id) { return this.mutate((s) => cat.removeCatalogItem(s, kind, id)); }
-  addLevel(name) { return this.mutate((s) => cat.addLevel(s, name)); }
-  removeLevel(id) { return this.mutate((s) => cat.removeLevel(s, id)); }
   renameLevel(id, name) { return this.mutate((s) => cat.renameLevel(s, id, name)); }
   addStudent(st) { return this.mutate((s) => cat.addStudent(s, st)); }
   updateStudent(id, patch) { return this.mutate((s) => cat.updateStudent(s, id, patch)); }
@@ -153,14 +166,14 @@ export class Store {
   planImport(text) {
     const parsed = parseBackup(text);
     if (!parsed.ok) return { ok: false, errors: parsed.errors };
-    return { ok: true, backup: parsed.backup, plan: planImport(this.state, parsed.backup) };
+    return { ok: true, backup: parsed.backup, migratedNote: parsed.migratedNote, plan: planImport(this.state, parsed.backup) };
   }
 
-  /** Aplica un plan. Guarda antes una copia para poder deshacer. */
-  applyImport(backup, plan, choices = {}) {
+  /** Aplica un plan de importación (respaldo o acta). Guarda antes una copia para poder deshacer. */
+  applyPlan(plan, choices = {}, extraCycles = []) {
     const res = applyImport(this.state, plan, choices);
     if (!res.ok) return res;
-    const errors = finalizeImport(res.state, backup);
+    const errors = finalizeImport(res.state, { data: { cycles: extraCycles } });
     if (errors.length) return { ok: false, errors };
     const before = JSON.stringify(this.state);
     try { this.adapter.setItem(SNAPSHOT_KEY, before); } catch { /* sin espacio: continúa sin deshacer */ }
@@ -172,6 +185,8 @@ export class Store {
     this.emit({ type: 'import' });
     return { ok: true, summary: res.summary };
   }
+
+  applyImport(backup, plan, choices = {}) { return this.applyPlan(plan, choices, backup.data.cycles ?? []); }
 
   hasUndoSnapshot() { return this.adapter.getItem(SNAPSHOT_KEY) != null; }
 

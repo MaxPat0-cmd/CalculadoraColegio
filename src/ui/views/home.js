@@ -59,11 +59,13 @@ export function homeView(ctx) {
       h('ol', { class: 'checklist' }, list.steps.map((s, i) => h('li', { class: s.done ? 'done' : '' },
         h('span', { class: 'check-dot', 'aria-hidden': 'true' }, s.done ? '✓' : String(i + 1)),
         h('span', null, s.label, h('span', { class: 'sr-only' }, s.done ? ' (hecho)' : ' (pendiente)')),
-        s.done ? null : h('button', { class: 'btn small', type: 'button', onclick: () => { ctx.ui.settingsTab = 'catalogos'; ctx.ui.catTab = s.key; location.hash = '#ajustes'; } }, 'Ir'))))));
+        s.done ? null : h('button', { class: 'btn small', type: 'button', onclick: () => { ctx.ui.settingsTab = 'catalogos'; ctx.ui.catTab = s.key; location.hash = '#ajustes'; } }, 'Ir'))))),
+      h('p', { class: 'muted foot' }, 'Atajo: también puedes traer alumnos desde un acta en Ajustes → Importar actas.'));
   } else if (p.role === 'control') {
     const sum = controlSummary(state);
     cards.push(hero('Control Escolar', `Ciclo escolar ${state.activeCycle}`, [
       h('button', { class: 'btn primary', type: 'button', onclick: () => { ctx.ui.control = { ...(ctx.ui.control ?? {}), query: '', levelId: '', groupId: '', onlyIncomplete: true }; location.hash = '#control'; } }, sum.incomplete ? 'Revisar incompletos' : 'Abrir panel'),
+      h('button', { class: 'btn', type: 'button', onclick: () => { ctx.ui.settingsTab = 'importar'; location.hash = '#ajustes'; } }, 'Importar actas'),
       h('button', { class: 'btn', type: 'button', onclick: () => { ctx.ui.settingsTab = 'respaldos'; location.hash = '#ajustes'; } }, 'Respaldos'),
     ]));
     const t = [tile('Alumnos', sum.students), tile('Con información incompleta', sum.incomplete, sum.incomplete ? 'warm' : 'ok'), tile('Completos', sum.complete, 'ok'), tile('Incidencias', sum.issues, sum.issues ? 'rose' : '')];

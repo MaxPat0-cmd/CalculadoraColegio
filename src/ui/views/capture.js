@@ -8,7 +8,7 @@ import { captureSubjectView } from './captureSubject.js';
 
 const HINTS = {
   alumno: 'Todas las asignaturas de un alumno en una sola pantalla. Ideal para profesores titulares de primaria.',
-  asignatura: 'Una materia para todo el grupo. Ideal para secundaria, bachillerato y docentes especialistas.',
+  asignatura: 'Una materia para todo el grupo. Ideal para secundaria y docentes especialistas.',
 };
 
 export function captureView(ctx) {

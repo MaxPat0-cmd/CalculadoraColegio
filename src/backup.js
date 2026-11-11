@@ -2,6 +2,7 @@
 // primero se genera un PLAN (nuevo / idéntico / conflicto) y solo se aplica lo que el usuario decide.
 import { SCHEMA_VERSION, APP_VERSION, stableStringify, recordContentEqual } from './models.js';
 import { validateRecord } from './validation.js';
+import { stripUnsupportedLevels, describeRemoved } from './migrate.js';
 
 export const BACKUP_FORMAT = 'calculadora-academica-alzate-backup';
 
@@ -49,7 +50,7 @@ export function parseBackup(text) {
   const errors = [];
   if (!b || b.format !== BACKUP_FORMAT) errors.push('El archivo no es un respaldo de la Calculadora Académica Alzate.');
   else {
-    if (b.schemaVersion !== SCHEMA_VERSION) errors.push(`Versión de esquema no soportada: ${b.schemaVersion} (se esperaba ${SCHEMA_VERSION}).`);
+    if (b.schemaVersion !== SCHEMA_VERSION && b.schemaVersion !== 1) errors.push(`Versión de esquema no soportada: ${b.schemaVersion} (se esperaba ${SCHEMA_VERSION}).`);
     const d = b.data;
     if (!d || !d.catalogs || !Array.isArray(d.students) || !Array.isArray(d.records)) errors.push('El respaldo está incompleto.');
     else {
@@ -57,7 +58,14 @@ export function parseBackup(text) {
       if (!errors.length && checksum(stableStringify(d)) !== b.checksum) errors.push('La suma de verificación no coincide: el respaldo fue modificado o está dañado.');
     }
   }
-  return errors.length ? { ok: false, errors } : { ok: true, backup: b };
+  if (errors.length) return { ok: false, errors };
+  let migratedNote = null;
+  if (b.schemaVersion === 1) { // respaldo de la versión anterior: se retiran niveles no admitidos antes de planear
+    const removed = stripUnsupportedLevels(b.data);
+    b.schemaVersion = SCHEMA_VERSION;
+    migratedNote = describeRemoved(removed);
+  }
+  return { ok: true, backup: b, migratedNote };
 }
 
 const sameJson = (a, b) => stableStringify(a) === stableStringify(b);
@@ -133,7 +141,7 @@ export function applyImport(state, plan, choices = {}) {
   for (const e of plan.entries) {
     if (e.status === 'identico') summary.identical++;
     else if (e.status === 'nuevo') { put(e); summary.added++; }
-    else if (choices[e.uid] === 'replace') { put(e); summary.replaced++; }
+    else if (choices[e.uid] === 'replace' && !e.locked) { put(e); summary.replaced++; }
     else summary.kept++;
   }
   return { ok: true, state: next, summary };

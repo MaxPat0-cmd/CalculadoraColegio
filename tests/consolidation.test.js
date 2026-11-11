@@ -6,7 +6,7 @@ import { createRecord, valueField } from '../src/models.js';
 
 test('consolida todas las asignaturas y periodos esperados del nivel del alumno', () => {
   const store = makeStore();
-  for (const level of ['primaria', 'secundaria', 'cch']) {
+  for (const level of ['primaria', 'secundaria']) {
     const st = store.state.students.find((s) => s.levelId === level);
     const c = consolidateStudent(store.state, st.id);
     const subjects = store.state.catalogs.subjects.filter((s) => s.levelId === level).length;

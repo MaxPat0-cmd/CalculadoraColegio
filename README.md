@@ -1,21 +1,34 @@
-# UA · Calculadora Académica Alzate — v1.4 (demostrativo)
+# UA · Calculadora Académica Alzate — v1.5 (demostrativo)
 
-Aplicación web para el **Colegio Alzate** (primaria, secundaria y CCH) que demuestra el flujo completo:
+Aplicación web para el **Colegio Alzate** (**primaria y secundaria**; CCH y universidad se atienden en otra calculadora) que demuestra el flujo completo:
 **captura de calificaciones → almacenamiento → consolidación por alumno → reportes**.
 
-> ⚠️ **Versión 1.4 = demostrativa.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
+> ⚠️ **Versión 1.5 = demostrativa.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
 > institucionales y todos los documentos generados llevan la leyenda *«DOCUMENTO DEMOSTRATIVO — NO OFICIAL»*.
 > **No capturar datos reales de menores.**
 
 Este proyecto es **independiente**: no comparte código, historial ni repositorio con la calculadora universitaria
 usada solo como referencia conceptual.
 
+## Novedades de la versión 1.5 — solo Primaria y Secundaria, importación de actas y paleta institucional
+- **Solo Primaria y Secundaria**: se retiraron CCH y universidad (catálogos, datos de ejemplo y onboarding). Los datos y
+  respaldos de versiones anteriores se **migran automáticamente**: se conserva una copia del documento original y se avisa
+  qué se retiró.
+- **Importar actas desde Excel (.xlsx) o CSV** (Ajustes → Importar actas): alumnos y calificaciones, en formato largo
+  (una fila por alumno × asignatura × periodo), de una sola materia o con una columna por materia. Detecta encabezados y
+  columnas por sinónimos (matrícula/cuenta, alumno, grupo, asignatura, periodo, calificación, faltas…), permite corregir
+  el mapeo, crea los grupos que falten si lo pides y trae **plantilla descargable**. Antes de aplicar muestra qué es nuevo,
+  idéntico o en conflicto, **omite y reporta las filas inválidas con su número** y no sobrescribe nada sin tu decisión
+  (con «Deshacer»). Quien ya tiene calificaciones no puede cambiar de nivel, grupo ni ciclo por importación.
+- **Paleta institucional**: azul oscuro `#17365D` (navegación y botones), dorado `#D4A72C` (acentos), blanco `#FFFFFF` y gris
+  claro `#F4F6F8` (fondos) y gris oscuro `#202A35` (texto), con el vidrio Liquid Glass sobre ella.
+
 ## Novedades de la versión 1.4 — Liquid Glass, onboarding y navegación simple
-- **Estilo**: paleta pastel (lavanda, rosa, durazno, menta, cielo) con **Liquid Glass**: barra flotante, tarjetas, hojas,
-  avisos y onboarding translúcidos con desenfoque, reflejo especular y borde de luz; modo oscuro propio.
+- **Estilo**: **Liquid Glass** (barra flotante, tarjetas, hojas, avisos y onboarding translúcidos con desenfoque, reflejo
+  especular y borde de luz); modo oscuro propio. *(La paleta pastel original se sustituyó en la 1.5 por la institucional.)*
 - **Logo**: únicamente las letras **UA** (serif de alto contraste, tracking amplio, degradado), también como favicon.
-- **Onboarding**: al abrir por primera vez pregunta si eres docente de **preescolar, primaria, secundaria, bachillerato,
-  universidad u otro nivel** y adapta la app (ver abajo). Se puede omitir y reabrir desde el chip de perfil.
+- **Onboarding**: al abrir por primera vez pregunta si eres docente (y de **primaria o secundaria**), de Control Escolar o si
+  solo quieres explorar, y adapta la app. Se puede omitir y reabrir desde el chip de perfil.
 - **Navegación simplificada**: de 5 a 4 destinos — *Inicio · Capturar · Control Escolar · Ajustes*. Las dos modalidades de
   captura son un control segmentado en *Capturar*; catálogos y respaldos viven en *Ajustes*. Los enlaces antiguos funcionan.
 - **Inicio adaptado al perfil**: docente (pendientes, siguiente paso), Control Escolar (incompletos) o exploración guiada;
@@ -75,8 +88,9 @@ Alternativa: `python3 -m http.server 8080`.)
 | Panel de Control Escolar: búsqueda, incompletos, consolidación verificada, incidencias | ✅ Implementada |
 | Exportación PDF y Excel individual con el formato del reporte de referencia, y Excel concentrado | ✅ Implementada (formato **demostrativo**, no oficial) |
 | Almacenamiento local + respaldos JSON con vista previa de conflictos y deshacer | ✅ Implementada |
+| Importar actas de Excel (.xlsx) / CSV con alumnos y calificaciones, plantilla y vista previa | ✅ Implementada (formato de acta **por confirmar** con Control Escolar) |
 | Motor de evaluación configurable | 🟡 **Solo el contrato y la infraestructura**; sin ninguna regla definida |
-| Reglas de evaluación de primaria / secundaria / CCH (ponderaciones, promedios, aprobación, exenciones) | ⏳ **Pendiente de validación institucional** |
+| Reglas de evaluación de primaria / secundaria (ponderaciones, promedios, aprobación, exenciones) | ⏳ **Pendiente de validación institucional** |
 | Escala de captura 0–10 | 🟡 Valor **demostrativo** configurable; solo limita lo que se puede teclear |
 | Formato oficial de boleta / reporte | ⏳ Pendiente (el PDF/Excel siguen un reporte de referencia, no un formato oficial) |
 | Usuarios, permisos por docente, bitácora, servidor y base de datos | ⏳ Fuera del alcance de v0.1 |
@@ -94,6 +108,8 @@ src/capture.js                   Lógica común de ambas modalidades de captura
 src/evaluation.js                Motor de reglas configurable (vacío por diseño)
 src/store.js                     Persistencia (localStorage con adaptador intercambiable)
 src/backup.js                    Respaldos: exportar, planificar importación, aplicar
+src/migrate.js                   Migración del esquema 1 → 2 (solo Primaria y Secundaria)
+src/import/                      Importar actas: tabular.js (xlsx/csv) · actas.js (plan) · template.js
 src/consolidation.js             Consolidación y búsqueda para Control Escolar
 src/export/                      zip.js · xlsx.js · pdf.js · reports.js (sin dependencias)
 src/ui/                          Componentes y vistas

@@ -5,8 +5,10 @@ import { normalize } from './models.js';
 export const LEVELS = Object.freeze([
   { id: 'primaria', name: 'Primaria' },
   { id: 'secundaria', name: 'Secundaria' },
-  { id: 'cch', name: 'CCH' },
 ]);
+
+/** Esta calculadora solo atiende Primaria y Secundaria (CCH y universidad viven en otra calculadora). */
+export const ALLOWED_LEVELS = Object.freeze(['primaria', 'secundaria']);
 
 export const CATALOG_KINDS = ['groups', 'teachers', 'subjects', 'periods'];
 
@@ -104,27 +106,6 @@ export function removeCatalogItem(state, kind, id) {
   if (kind === 'periods' && recs.some((r) => r.periodId === id)) return fail('El periodo tiene calificaciones registradas.');
   list.splice(idx, 1);
   if (kind === 'subjects') state.catalogs.teachers.forEach((t) => { t.subjectIds = t.subjectIds.filter((s) => s !== id); });
-  return { ok: true };
-}
-
-export function addLevel(state, name) {
-  const n = String(name ?? '').trim();
-  if (!n) return fail('Escribe el nombre del nivel.');
-  if (n.length > 40) return fail('El nombre del nivel es demasiado largo (máximo 40 caracteres).');
-  if (state.catalogs.levels.some((l) => normalize(l.name) === normalize(n))) return fail('Ese nivel ya existe.');
-  const item = { id: uniqueId(state.catalogs.levels.map((l) => l.id), slug(n)), name: n };
-  state.catalogs.levels.push(item);
-  return { ok: true, item };
-}
-
-export function removeLevel(state, id) {
-  const idx = state.catalogs.levels.findIndex((l) => l.id === id);
-  if (idx < 0) return fail('Nivel no encontrado.');
-  const c = state.catalogs;
-  if (c.groups.some((g) => g.levelId === id) || c.subjects.some((s) => s.levelId === id) || c.teachers.some((t) => t.levelIds.includes(id)) || state.students.some((s) => s.levelId === id)) {
-    return fail('El nivel tiene grupos, asignaturas, docentes o alumnos; elimínalos o reasígnalos primero.');
-  }
-  c.levels.splice(idx, 1);
   return { ok: true };
 }
 

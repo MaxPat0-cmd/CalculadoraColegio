@@ -5,10 +5,9 @@ import { PdfDocument, textWidth, wrapText } from './pdf.js';
 import { buildXlsx, XS } from './xlsx.js';
 
 export const LEGEND = 'DOCUMENTO DEMOSTRATIVO — NO OFICIAL';
-/** Título del encabezado según el nivel: «COLEGIO ALZATE C.C.H.», «… PRIMARIA», «… SECUNDARIA». */
+/** Título del encabezado según el nivel: «COLEGIO ALZATE PRIMARIA» o «COLEGIO ALZATE SECUNDARIA». */
 export function institutionTitle(institution, levelId, levelName) {
-  const suffix = levelId === 'cch' ? 'C.C.H.' : String(levelName ?? '').toUpperCase();
-  return `${String(institution).toUpperCase()} ${suffix}`.trim();
+  return `${String(institution).toUpperCase()} ${String(levelName ?? '').toUpperCase()}`.trim();
 }
 
 export const LEGEND_DETAIL = 'Datos ficticios. Las reglas de evaluación aún no están validadas: no se muestran promedios ni calificaciones finales.';

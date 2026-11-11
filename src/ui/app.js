@@ -27,6 +27,8 @@ const { adapter, volatile } = pickAdapter();
 const store = new Store(adapter);
 if (volatile) store.loadWarning = 'El navegador bloquea el almacenamiento local: los cambios se perderán al cerrar la pestaña. Exporta un respaldo con frecuencia.';
 const ctx = { store, registry: createDefaultRegistry(), ui: { config: loadUi() }, profile: loadProfile() };
+// Perfil de una versión anterior con un nivel que ya no existe (CCH, universidad…): se vuelve a preguntar.
+if (ctx.profile.role === 'docente' && !store.state.catalogs.levels.some((l) => l.id === ctx.profile.levelId)) { ctx.profile = { done: false }; saveProfile(ctx.profile); }
 ctx.ui.config = normalizeConfig(store.state, ctx.ui.config);
 saveUi(ctx.ui.config);
 
@@ -37,7 +39,7 @@ const ROUTES = [
   ['control', 'Control Escolar', controlView],
   ['ajustes', 'Ajustes', settingsView],
 ];
-const ALIAS = { alumno: ['capturar', 'alumno'], asignatura: ['capturar', 'asignatura'], catalogos: ['ajustes', 'catalogos'], respaldos: ['ajustes', 'respaldos'] };
+const ALIAS = { alumno: ['capturar', 'alumno'], asignatura: ['capturar', 'asignatura'], catalogos: ['ajustes', 'catalogos'], importar: ['ajustes', 'importar'], respaldos: ['ajustes', 'respaldos'] };
 
 document.getElementById('app-version').textContent = APP_VERSION;
 const main = document.getElementById('main');
@@ -71,6 +73,9 @@ function render() {
   updateChip();
   clear(main);
   if (store.loadWarning) main.append(h('p', { class: 'banner warn', role: 'alert' }, store.loadWarning));
+  if (store.notice && ctx.profile.done) { // el aviso espera a que se cierre el onboarding para que se lea
+    main.append(h('p', { class: 'banner info', role: 'status' }, store.notice)); store.notice = null;
+  }
   const view = route[2](ctx, param);
   main.append(view.el);
   if (lastRoute !== route[0]) {

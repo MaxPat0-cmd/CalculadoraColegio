@@ -1,38 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeStore } from './helpers.js';
-import { addLevel, removeLevel } from '../src/catalogs.js';
+import { ALLOWED_LEVELS } from '../src/catalogs.js';
 import { LEVEL_CHOICES, ensureLevel, levelForChoice, defaultMode, startHash, profileLabel, greeting, configPatchForProfile, teachersFor } from '../src/onboarding.js';
 import { teacherSummary, controlSummary, setupChecklist } from '../src/home.js';
 import { saveCapture } from '../src/capture.js';
 
-test('niveles: alta con id único, sin duplicados y sin eliminar si tienen contenido', () => {
-  const s = makeStore().state;
-  const r = addLevel(s, 'Preescolar');
-  assert.equal(r.ok, true); assert.equal(r.item.id, 'preescolar');
-  assert.equal(addLevel(s, '  preescolar ').ok, false, 'duplicado sin importar mayúsculas');
-  assert.equal(addLevel(s, '').ok, false);
-  assert.equal(addLevel(s, 'x'.repeat(41)).ok, false);
-  assert.equal(removeLevel(s, 'primaria').ok, false, 'tiene grupos y alumnos');
-  assert.equal(removeLevel(s, 'preescolar').ok, true);
-  assert.equal(removeLevel(s, 'no-existe').ok, false);
+test('solo existen Primaria y Secundaria: ni CCH ni universidad en catálogo, datos demo ni onboarding', () => {
+  const { state } = makeStore();
+  assert.deepEqual(state.catalogs.levels.map((l) => l.id), ['primaria', 'secundaria']);
+  assert.deepEqual([...ALLOWED_LEVELS], ['primaria', 'secundaria']);
+  assert.ok(state.students.every((s) => ALLOWED_LEVELS.includes(s.levelId)));
+  assert.ok(state.catalogs.groups.every((g) => ALLOWED_LEVELS.includes(g.levelId)));
+  assert.ok(state.catalogs.subjects.every((s) => ALLOWED_LEVELS.includes(s.levelId)));
+  assert.ok(state.catalogs.teachers.every((t) => t.levelIds.every((l) => ALLOWED_LEVELS.includes(l))));
+  assert.ok(Object.values(state.records).every((r) => !r.subjectId.startsWith('cch-')));
+  assert.deepEqual(LEVEL_CHOICES.map((c) => c.id), ['primaria', 'secundaria']);
 });
 
-test('onboarding: bachillerato se enlaza con CCH; preescolar y universidad se crean vacíos', () => {
+test('onboarding: cada opción se enlaza con su nivel y lo desconocido se rechaza', () => {
   const store = makeStore();
-  const choice = (id) => LEVEL_CHOICES.find((c) => c.id === id);
-  assert.equal(levelForChoice(store.state, choice('bachillerato')), 'cch');
-  assert.equal(levelForChoice(store.state, choice('preescolar')), null);
+  for (const c of LEVEL_CHOICES) assert.equal(levelForChoice(store.state, c), c.id);
   assert.deepEqual(ensureLevel(store, 'primaria'), { ok: true, levelId: 'primaria', created: false });
-  const pre = ensureLevel(store, 'preescolar');
-  assert.equal(pre.ok, true); assert.equal(pre.created, true);
-  assert.equal(store.state.catalogs.groups.filter((g) => g.levelId === pre.levelId).length, 0, 'no inventa grupos');
-  assert.equal(store.state.students.filter((s) => s.levelId === pre.levelId).length, 0, 'no inventa alumnos');
-  assert.equal(ensureLevel(store, 'preescolar').created, false, 'idempotente');
-  assert.equal(ensureLevel(store, 'otro', '   ').ok, false);
-  const otro = ensureLevel(store, 'otro', 'Maestría');
-  assert.equal(otro.ok, true); assert.equal(store.state.catalogs.levels.find((l) => l.id === otro.levelId).name, 'Maestría');
-  assert.equal(ensureLevel(store, 'inexistente').ok, false);
+  for (const bad of ['cch', 'bachillerato', 'universidad', 'preescolar', 'otro']) assert.equal(ensureLevel(store, bad).ok, false, bad);
+  assert.equal(levelForChoice(store.state, undefined), null);
 });
 
 test('perfil: modalidad, pantalla de arranque, etiqueta y ajuste de configuración', () => {
@@ -41,7 +32,7 @@ test('perfil: modalidad, pantalla de arranque, etiqueta y ajuste de configuraci�
   assert.equal(defaultMode('secundaria'), 'asignatura');
   const docPri = { done: true, role: 'docente', levelId: 'primaria', teacherId: 't-titular-pri' };
   assert.equal(startHash(st, docPri), '#capturar');
-  assert.equal(startHash(st, { ...docPri, levelId: 'preescolar' }), '#inicio', 'nivel sin grupos arranca en Inicio');
+  assert.equal(startHash(st, { ...docPri, levelId: 'inexistente' }), '#inicio', 'sin grupos arranca en Inicio');
   assert.equal(startHash(st, { done: true, role: 'control' }), '#control');
   assert.equal(startHash(st, { done: true, role: 'explorar' }), '#inicio');
   assert.equal(profileLabel(st, docPri), 'Docente · Primaria');
@@ -61,23 +52,21 @@ test('inicio: el resumen del docente cuenta pendientes y sugiere por dónde segu
   assert.equal(a.subjects, 4); assert.equal(a.students, 6);
   assert.equal(a.expected, 24); assert.equal(a.complete + a.pending, a.expected);
   assert.ok(a.next && a.next.pending > 0);
-  // completar la materia sugerida reduce los pendientes
   const subj = a.next.subject.id;
   for (const st of store.state.students.filter((s) => s.groupId === 'pri-4a')) saveCapture(store, { studentId: st.id, subjectId: subj, teacherId: 't-titular-pri', periodId: 'p3', gradeText: '9', absencesText: '0' });
-  const b = teacherSummary(store.state, args);
-  assert.equal(b.pending, a.pending - a.next.pending);
+  assert.equal(teacherSummary(store.state, args).pending, a.pending - a.next.pending);
   assert.deepEqual(teacherSummary(store.state, { ...args, teacherId: 'nadie' }), { subjects: 0, students: 0, expected: 0, complete: 0, pending: 0, next: null });
 });
 
-test('inicio: resumen de Control Escolar y lista de pasos para un nivel nuevo', () => {
+test('inicio: resumen de Control Escolar y lista de pasos', () => {
   const store = makeStore();
   const c = controlSummary(store.state);
-  assert.equal(c.students, 30); assert.equal(c.complete + c.incomplete, 30); assert.ok(c.incomplete > 0);
-  const lvl = ensureLevel(store, 'universidad').levelId;
-  let list = setupChecklist(store.state, lvl);
-  assert.equal(list.ready, false); assert.ok(list.steps.every((s) => !s.done));
-  store.addCatalogItem('groups', { name: 'A', levelId: lvl, grade: 1 });
-  list = setupChecklist(store.state, lvl);
-  assert.equal(list.steps.find((s) => s.key === 'groups').done, true);
+  assert.equal(c.students, 20); assert.equal(c.complete + c.incomplete, 20); assert.ok(c.incomplete > 0);
   assert.equal(setupChecklist(store.state, 'primaria').ready, true);
+  store.state.catalogs.groups = store.state.catalogs.groups.filter((g) => g.levelId !== 'secundaria');
+  let list = setupChecklist(store.state, 'secundaria');
+  assert.equal(list.steps.find((s) => s.key === 'groups').done, false); assert.equal(list.ready, false);
+  store.addCatalogItem('groups', { name: 'A', levelId: 'secundaria', grade: 1 });
+  list = setupChecklist(store.state, 'secundaria');
+  assert.equal(list.steps.find((s) => s.key === 'groups').done, true);
 });

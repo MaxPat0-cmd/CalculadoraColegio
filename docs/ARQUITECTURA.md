@@ -1,4 +1,4 @@
-# Arquitectura — Calculadora Académica Alzate v1.4
+# Arquitectura — Calculadora Académica Alzate v1.5
 
 ## Tecnología elegida y por qué
 
@@ -84,14 +84,32 @@ Captura por teclado: `Enter`/`Mayús+Enter`/`↑`/`↓` para moverse entre filas
 
 ## Onboarding y perfil (v1.4)
 - `src/onboarding.js` (puro, probado): roles, opciones de nivel, `ensureLevel`, modalidad y pantalla de arranque.
-- Rol → **Docente** (pregunta nivel y, si hay varios, quién eres), **Control Escolar** o **Explorar**.
-- *Bachillerato* se enlaza con el nivel CCH del catálogo. *Preescolar*, *Universidad* u *Otro* se crean **vacíos**: no se
-  inventan grupos, alumnos ni reglas; la pantalla de Inicio muestra una lista de pasos para configurarlos.
+- Rol → **Docente** (pregunta nivel —Primaria o Secundaria— y, si hay varios, quién eres), **Control Escolar** o **Explorar**.
+- Esta calculadora solo atiende Primaria y Secundaria (`ALLOWED_LEVELS`); CCH y universidad viven en otra calculadora.
 - Primaria arranca en captura **por alumno** (titular); el resto, **por asignatura**.
 - El perfil se guarda por dispositivo (`alzate-profile-v1`), no es una cuenta ni forma parte de los respaldos.
 
-## Estilo: Liquid Glass sobre pasteles (v1.4)
-Fondo de malla pastel fijo + materiales translúcidos (`backdrop-filter: blur() saturate()`) con reflejo especular
+## Importación de actas (v1.5)
+- `import/tabular.js`: lee **.xlsx** sin dependencias (ZIP + XML; descompresión con `DecompressionStream('deflate-raw')`,
+  con límites de tamaño/filas contra archivos hostiles) y **.csv** (`,` `;` o tabulador, comillas, BOM). `.xls` se rechaza con instrucciones.
+- `import/actas.js`: detecta la fila de encabezados y mapea columnas por sinónimos; interpreta grupos («4° A», «4A»…),
+  periodos y asignaturas; soporta acta larga, de una materia o ancha (una columna por materia). Genera un **plan** con
+  la misma forma que el de respaldos (nuevo/idéntico/conflicto) y se aplica con `store.applyPlan` (copia para deshacer).
+- Cada fila es atómica: si algo falla se omite completa (sin altas parciales) y se reporta con su número de fila.
+  Los alumnos con calificaciones quedan «con candado» (no cambian de nivel, grupo ni ciclo).
+- `ui/planPreview.js` es la vista previa compartida con la importación de respaldos.
+
+## Migración de esquema (v1.5)
+`SCHEMA_VERSION = 2`. Al cargar un documento v1, `migrate.js` retira los niveles no admitidos y lo que dependía de ellos
+(grupos, asignaturas, alumnos, registros; los docentes se limpian), tras **copiar el documento original** a
+`alzate-calculadora-v0.1-antes-de-migrar`, y la interfaz informa qué se retiró. Los respaldos v1 se migran igual al importar.
+
+## Paleta y estilo: Liquid Glass (v1.5)
+Colores institucionales: azul `#17365D` (principal), dorado `#D4A72C` (acento; en texto se usa `#7a5a00` por contraste),
+blanco `#FFFFFF` y gris `#F4F6F8` (fondos), texto `#202A35`. Estados semánticos sobrios (pendiente = dorado).
+
+## Estilo: Liquid Glass (v1.4)
+Fondo claro con destellos sutiles + materiales translúcidos (`backdrop-filter: blur() saturate()`) con reflejo especular
 (`radial-gradient` arriba-izquierda), borde de luz (`inset` claro) y sombras en capas. Jerarquía por material: barra y
 tarjetas (delgado) < hojas y onboarding (grueso). Fallbacks: `prefers-reduced-transparency`, `prefers-contrast: more` y
 navegadores sin `backdrop-filter` usan superficies sólidas. Logo: texto «UA» en serif con degradado (`background-clip: text`).
