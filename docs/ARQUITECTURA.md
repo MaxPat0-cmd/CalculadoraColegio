@@ -1,4 +1,4 @@
-# Arquitectura — Calculadora Académica Alzate v1.2
+# Arquitectura — Calculadora Académica Alzate v1.3
 
 ## Tecnología elegida y por qué
 
@@ -81,6 +81,25 @@ Navegación por pestañas, enlace "saltar al contenido", foco visible, etiquetas
 e icono** (no solo color), errores asociados al campo con `role="alert"`, aviso de guardado con región `aria-live`,
 tema claro/oscuro automático, tablas con desplazamiento horizontal y diseño verificado en ancho de tableta (768 px).
 Captura por teclado: `Enter`/`Mayús+Enter`/`↑`/`↓` para moverse entre filas; guardado al confirmar o salir del campo.
+
+## Movimiento y sensación de uso
+Aplicación de los principios de *apple-design* (WWDC *Designing Fluid Interfaces*):
+
+| Principio | Dónde |
+|---|---|
+| Respuesta inmediata (feedback al presionar, no al soltar) | `installPress` en `ui/motion.js`; `:active` sin transición en CSS |
+| Manipulación directa 1:1 con el punto de agarre | `ui/sheet.js` (Pointer Events + `setPointerCapture`) |
+| Interrumpibilidad: siempre desde el valor presentado, velocidad heredada | `Spring.to()` en `physics.js`; probado en `tests/physics.test.js` |
+| Resortes (amortiguamiento + respuesta), crítico por defecto, rebote solo con impulso | `physics.js`, `sheetRelease` |
+| Momentum: proyección exponencial `v/1000·d/(1−d)` y rubber-banding | `project`, `rubberband` |
+| Simetría espacial (entra y sale por el mismo camino) | hoja desde abajo; siguiente/anterior alumno entran por su lado |
+| Materiales y profundidad | barra de pestañas translúcida, hojas, avisos; fondo que se aleja |
+| Tipografía por tamaño | tracking negativo en títulos, positivo en texto pequeño; leading inverso al tamaño |
+| Accesibilidad | `prefers-reduced-motion` / `-transparency` / `-contrast`; `inert` y foco devuelto en hojas |
+
+Solo se animan `transform` y `opacity`. La física (`src/physics.js`) no depende del DOM y está probada con un reloj
+simulado; `src/ui/motion.js` la conecta al DOM y a `prefers-reduced-motion`. No hay carruseles ni drawers en la app:
+la hoja del expediente es el único componente de gestos.
 
 ## Pruebas (`npm test`)
 Integridad de registros y prevención de duplicados · sincronía entre modalidades · pendiente/desconocido/cero ·

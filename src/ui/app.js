@@ -1,4 +1,7 @@
 import { h, clear } from './dom.js';
+import { createTabs } from './tabs.js';
+import { fadeUp, installPress } from './motion.js';
+import { closeSheet } from './sheet.js';
 import { Store, MemoryAdapter } from '../store.js';
 import { APP_VERSION } from '../models.js';
 import { createDefaultRegistry } from '../evaluation.js';
@@ -36,7 +39,10 @@ const ROUTES = [
 document.getElementById('app-version').textContent = APP_VERSION;
 const main = document.getElementById('main');
 const nav = document.getElementById('nav');
+const tabs = createTabs(nav, ROUTES);
+installPress();
 let current = null;
+let lastRoute = null;
 
 function parseHash() {
   const [name, ...rest] = (location.hash.replace(/^#/, '') || 'alumno').split('/');
@@ -47,15 +53,23 @@ function parseHash() {
 function render() {
   const { route, param } = parseHash();
   ctx.ui.config = normalizeConfig(store.state, ctx.ui.config);
-  clear(nav).append(...ROUTES.map(([id, label]) => h('a', { href: `#${id}`, class: id === route[0] ? 'tab active' : 'tab', 'aria-current': id === route[0] ? 'page' : null }, label)));
+  if (route[0] !== 'control') closeSheet({ silent: true, instant: true });
+  tabs.setActive(route[0]);
   clear(main);
   if (store.loadWarning) main.append(h('p', { class: 'banner warn', role: 'alert' }, store.loadWarning));
   current = route[2](ctx, param);
   main.append(current.el);
+  if (lastRoute !== route[0]) fadeUp(current.el); // la vista nueva entra con un resorte; abrir una hoja no re-anima el listado
   document.title = `${route[1]} — Calculadora Académica Alzate (demo)`;
 }
 
-window.addEventListener('hashchange', () => { render(); main.focus({ preventScroll: true }); window.scrollTo(0, 0); });
+window.addEventListener('hashchange', () => {
+  const prev = lastRoute;
+  const { route } = parseHash();
+  render();
+  if (prev !== route[0]) { main.focus({ preventScroll: true }); window.scrollTo(0, 0); }
+  lastRoute = route[0];
+});
 // Cambios hechos en otra pestaña: recarga el estado y redibuja si no se está escribiendo.
 window.addEventListener('storage', (e) => {
   if (e.key !== null && !e.key.startsWith('alzate-calculadora-v0.1')) return;
@@ -63,5 +77,10 @@ window.addEventListener('storage', (e) => {
   store.reload();
   render();
 });
+// Borde de scroll: la barra translúcida gana definición solo cuando hay contenido debajo.
+const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 4);
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
 render();
+lastRoute = parseHash().route[0];
 window.__alzate = { store, ctx }; // útil para depuración en consola

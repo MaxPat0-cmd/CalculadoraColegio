@@ -1,5 +1,6 @@
 // Tabla de captura compartida por ambas modalidades. Guarda al confirmar (Enter, Tab o salir del campo).
 import { h, badge, announce, toast } from './dom.js';
+import { makeSpring, pop } from './motion.js';
 import { saveCapture } from '../capture.js';
 import { fieldToInput } from '../validation.js';
 import { FIELD } from '../models.js';
@@ -11,13 +12,23 @@ export function rowBadge(row) {
   return badge('completo', 'Completo');
 }
 
+/** Barra de avance cuyo ancho se anima con un resorte desde el valor actual (no se recrea en cada guardado). */
 export function progress(rows) {
-  const done = rows.filter((r) => r.complete).length;
-  const pct = rows.length ? Math.round((done / rows.length) * 100) : 0;
-  return h('div', { class: 'progress-wrap' },
-    h('div', { class: 'progress', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, 'aria-label': 'Avance de captura' },
-      h('div', { class: 'progress-bar', style: `width:${pct}%` })),
-    h('span', { class: 'progress-label' }, `${done} de ${rows.length} completos (${pct} %)`));
+  const bar = h('div', { class: 'progress-bar' });
+  const track = h('div', { class: 'progress', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-label': 'Avance de captura' }, bar);
+  const label = h('span', { class: 'progress-label' });
+  const wrap = h('div', { class: 'progress-wrap' }, track, label);
+  const spring = makeSpring({ value: 0, precision: 0.05, onUpdate: (v) => { bar.style.transform = `scaleX(${v / 100})`; } });
+  const apply = (list, animate) => {
+    const done = list.filter((r) => r.complete).length;
+    const pct = list.length ? Math.round((done / list.length) * 100) : 0;
+    track.setAttribute('aria-valuenow', pct);
+    label.textContent = `${done} de ${list.length} completos (${pct} %)`;
+    if (animate) spring.to(pct, { damping: 1, response: 0.5 }); else spring.set(pct);
+  };
+  apply(rows, false);
+  wrap.update = (list) => apply(list, true);
+  return wrap;
 }
 
 /**
@@ -67,7 +78,10 @@ export function captureTable(ctx, rows, { caption, firstCol, teacherId, onSaved 
       saved = cur;
       markPending();
       const newRow = { ...row, grade: res.record.grade, absences: res.record.absences };
-      status.replaceChildren(rowBadge(newRow), h('span', { class: 'saved' }, ' Guardado ✓'));
+      const prevClass = status.firstChild?.className;
+      const badgeEl = rowBadge(newRow);
+      status.replaceChildren(badgeEl, h('span', { class: 'saved' }, ' Guardado ✓'));
+      if (badgeEl.className !== prevClass) pop(badgeEl); // confirmación física solo cuando cambia el estado
       setTimeout(() => { const s = status.querySelector('.saved'); if (s) s.remove(); }, 1800);
       toast(`Guardado: ${firstCol.label(row)}`);
       onSaved?.(res.record);
