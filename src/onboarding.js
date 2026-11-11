@@ -1,7 +1,5 @@
 // Lógica pura del onboarding y del perfil de uso (sin DOM, probada con node:test).
 // El perfil NO es una cuenta: solo adapta la experiencia inicial (nivel, docente, modalidad y pantalla de arranque).
-import { slug } from './catalogs.js';
-import { normalize } from './models.js';
 
 export const ROLES = Object.freeze([
   { id: 'docente', title: 'Soy docente', desc: 'Capturo calificaciones y faltas de mis grupos.' },
@@ -9,33 +7,22 @@ export const ROLES = Object.freeze([
   { id: 'explorar', title: 'Solo quiero explorar', desc: 'Veo cómo funciona con datos de ejemplo.' },
 ]);
 
-/** Niveles que se ofrecen. `levelId` enlaza con el catálogo demostrativo; los demás se crean al elegirlos. */
+/** Niveles que atiende esta calculadora. Cada uno trae una recomendación de captura. */
 export const LEVEL_CHOICES = Object.freeze([
-  { id: 'preescolar', label: 'Preescolar' },
-  { id: 'primaria', label: 'Primaria', levelId: 'primaria' },
-  { id: 'secundaria', label: 'Secundaria', levelId: 'secundaria' },
-  { id: 'bachillerato', label: 'Bachillerato / CCH', levelId: 'cch' },
-  { id: 'universidad', label: 'Universidad' },
-  { id: 'otro', label: 'Otro nivel' },
+  { id: 'primaria', label: 'Primaria', levelId: 'primaria', desc: 'Titular de grupo: captura todas las materias de cada alumno.' },
+  { id: 'secundaria', label: 'Secundaria', levelId: 'secundaria', desc: 'Varias materias y grupos: captura una materia para todo el grupo.' },
 ]);
 
-/** Id de nivel existente que corresponde a la opción elegida, o null si aún no existe en el catálogo. */
-export function levelForChoice(state, choice, customName = '') {
-  if (choice.levelId && state.catalogs.levels.some((l) => l.id === choice.levelId)) return choice.levelId;
-  const name = choice.id === 'otro' ? customName : choice.label;
-  const hit = state.catalogs.levels.find((l) => normalize(l.name) === normalize(name) || l.id === slug(name));
-  return hit?.id ?? null;
+/** Id del nivel del catálogo que corresponde a la opción elegida, o null si no existe. */
+export function levelForChoice(state, choice) {
+  return choice && state.catalogs.levels.some((l) => l.id === choice.levelId) ? choice.levelId : null;
 }
 
-/** Devuelve el nivel elegido; si no existe en el catálogo, lo crea vacío (sin inventar grupos ni alumnos). */
-export function ensureLevel(store, choiceId, customName = '') {
+export function ensureLevel(store, choiceId) {
   const choice = LEVEL_CHOICES.find((c) => c.id === choiceId);
   if (!choice) return { ok: false, error: 'Elige un nivel.' };
-  if (choice.id === 'otro' && !String(customName).trim()) return { ok: false, error: 'Escribe el nombre del nivel.' };
-  const existing = levelForChoice(store.state, choice, customName);
-  if (existing) return { ok: true, levelId: existing, created: false };
-  const res = store.addLevel(choice.id === 'otro' ? customName : choice.label);
-  return res.ok ? { ok: true, levelId: res.item.id, created: true } : { ok: false, error: res.error };
+  const levelId = levelForChoice(store.state, choice);
+  return levelId ? { ok: true, levelId, created: false } : { ok: false, error: `El nivel «${choice.label}» no está en el catálogo.` };
 }
 
 export const teachersFor = (state, levelId) => state.catalogs.teachers.filter((t) => t.levelIds.includes(levelId));

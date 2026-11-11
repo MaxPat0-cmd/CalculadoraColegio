@@ -24,25 +24,21 @@ const SUBJECTS = [
   ['pri-his', 'Historia', 'primaria'], ['pri-ing', 'Inglés', 'primaria'], ['pri-edf', 'Educación Física', 'primaria'],
   ['sec-esp', 'Español', 'secundaria'], ['sec-mat', 'Matemáticas', 'secundaria'], ['sec-cie', 'Ciencias', 'secundaria'],
   ['sec-his', 'Historia', 'secundaria'], ['sec-ing', 'Inglés', 'secundaria'], ['sec-tec', 'Tecnología', 'secundaria'],
-  ['cch-mat', 'Matemáticas', 'cch'], ['cch-tlr', 'Taller de Lectura y Redacción', 'cch'], ['cch-fis', 'Física', 'cch'],
-  ['cch-his', 'Historia', 'cch'], ['cch-ing', 'Inglés', 'cch'], ['cch-inf', 'Informática', 'cch'],
 ];
 
 const TEACHERS = [
   ['t-titular-pri', 'Profa. Titular Primaria (demo)', ['primaria'], ['pri-esp', 'pri-mat', 'pri-cie', 'pri-his']],
-  ['t-ingles', 'Prof. Inglés (demo)', ['primaria', 'secundaria', 'cch'], ['pri-ing', 'sec-ing', 'cch-ing']],
+  ['t-ingles', 'Prof. Inglés (demo)', ['primaria', 'secundaria'], ['pri-ing', 'sec-ing']],
   ['t-edfisica', 'Prof. Educación Física (demo)', ['primaria'], ['pri-edf']],
   ['t-humanidades-sec', 'Profa. Español e Historia Sec. (demo)', ['secundaria'], ['sec-esp', 'sec-his']],
-  ['t-mate', 'Prof. Matemáticas (demo)', ['secundaria', 'cch'], ['sec-mat', 'cch-mat']],
-  ['t-ciencias', 'Profa. Ciencias y Física (demo)', ['secundaria', 'cch'], ['sec-cie', 'cch-fis']],
-  ['t-humanidades-cch', 'Prof. Humanidades CCH (demo)', ['cch'], ['cch-tlr', 'cch-his']],
-  ['t-computo', 'Prof. Cómputo (demo)', ['secundaria', 'cch'], ['sec-tec', 'cch-inf']],
+  ['t-mate', 'Prof. Matemáticas (demo)', ['secundaria'], ['sec-mat']],
+  ['t-ciencias', 'Profa. Ciencias (demo)', ['secundaria'], ['sec-cie']],
+  ['t-computo', 'Prof. Tecnología (demo)', ['secundaria'], ['sec-tec']],
 ];
 
 const GROUPS = [
   ['pri-4a', 'primaria', 4, 'A', 6], ['pri-5a', 'primaria', 5, 'A', 4],
-  ['sec-1a', 'secundaria', 1, 'A', 4], ['sec-2b', 'secundaria', 2, 'B', 6],
-  ['cch-1a', 'cch', 1, 'A', 6], ['cch-3a', 'cch', 3, 'A', 4],
+  ['sec-1a', 'secundaria', 1, 'A', 4], ['sec-2b', 'secundaria', 2, 'B', 6]
 ];
 
 export function createDemoState(now = new Date('2026-11-11T12:00:00Z')) {

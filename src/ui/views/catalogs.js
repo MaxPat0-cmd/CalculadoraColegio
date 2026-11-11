@@ -96,14 +96,9 @@ export function catalogsView(ctx) {
       const min = h('input', { type: 'number', step: 'any', value: state.scale.min });
       const max = h('input', { type: 'number', step: 'any', value: state.scale.max });
       const cyc = h('input', { type: 'text', placeholder: '2027-2028' });
-      const lvName = h('input', { type: 'text', placeholder: 'Preescolar, Universidad…', maxLength: 40 });
       put(body, 
         h('h3', null, 'Niveles educativos'),
-        h('div', { class: 'level-list' }, state.catalogs.levels.map((l) => h('div', { class: 'level-row' },
-          field(`Nombre (${l.id})`, h('input', { type: 'text', value: l.name, onchange: (e) => report(store.renameLevel(l.id, e.target.value), 'Guardado') })),
-          h('button', { class: 'btn small danger', type: 'button', onclick: () => { if (confirm('¿Eliminar este nivel?')) report(store.removeLevel(l.id), 'Nivel eliminado'); } }, 'Eliminar')))),
-        h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); report(store.addLevel(lvName.value), 'Nivel agregado'); } },
-          h('h4', null, 'Agregar nivel'), field('Nombre', lvName), h('button', { class: 'btn primary', type: 'submit' }, 'Agregar nivel')),
+        h('div', { class: 'level-list' }, state.catalogs.levels.map((l) => field(`Nombre (${l.id})`, h('input', { type: 'text', value: l.name, onchange: (e) => report(store.renameLevel(l.id, e.target.value), 'Guardado') })))),
         h('h3', null, 'Escala de captura (demostrativa)'),
         h('p', { class: 'banner info' }, 'Solo delimita qué números se aceptan al capturar. No es una regla de aprobación ni de evaluación: esas reglas aún no existen en el sistema.'),
         h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); report(store.setScale(Number(min.value), Number(max.value)), 'Escala actualizada'); } },
@@ -114,7 +109,7 @@ export function catalogsView(ctx) {
           field('Nuevo ciclo', cyc), h('button', { class: 'btn', type: 'submit' }, 'Agregar ciclo')),
         h('h3', null, 'Reglas de evaluación'),
         h('p', { class: 'banner warn' }, h('strong', null, 'Pendiente de validación institucional. '),
-          'El módulo de reglas (src/evaluation.js) está preparado pero vacío: ninguna regla de primaria, secundaria o CCH ha sido definida o validada.'),
+          'El módulo de reglas (src/evaluation.js) está preparado pero vacío: ninguna regla de primaria o secundaria ha sido definida o validada.'),
         h('ul', null, state.catalogs.levels.map((l) => h('li', null, `${l.name}: ${ctx.registry.describe(l.id).name}`))));
     }
 

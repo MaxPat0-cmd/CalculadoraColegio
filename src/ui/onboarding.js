@@ -14,7 +14,7 @@ export function openOnboarding(ctx, { onDone }) {
   if (open) return;
   open = true;
   const { store } = ctx;
-  const a = { role: ctx.profile.role ?? null, choiceId: ctx.profile.choiceId ?? null, customName: '', teacherId: ctx.profile.teacherId ?? null };
+  const a = { role: ctx.profile.role ?? null, choiceId: ctx.profile.choiceId ?? null, teacherId: ctx.profile.teacherId ?? null };
   const stage = h('div', { class: 'onb-stage' });
   const dots = h('div', { class: 'onb-dots', 'aria-hidden': 'true' });
   const skip = h('button', { class: 'link-btn', type: 'button' }, 'Omitir por ahora');
@@ -56,7 +56,7 @@ export function openOnboarding(ctx, { onDone }) {
   const stepList = () => {
     const list = ['role'];
     if (levelStepNeeded()) list.push('level');
-    if (a.role === 'docente' && a.choiceId && a.choiceId !== 'otro') {
+    if (a.role === 'docente' && a.choiceId) {
       const lid = levelForChoice(store.state, LEVEL_CHOICES.find((c) => c.id === a.choiceId));
       if (lid && teachersFor(store.state, lid).length > 1) list.push('teacher');
     }
@@ -68,11 +68,10 @@ export function openOnboarding(ctx, { onDone }) {
   const finish = (extra = {}) => {
     const profile = { done: true, role: a.role ?? 'explorar', ...extra };
     if (profile.role === 'docente') {
-      const lv = ensureLevel(store, a.choiceId, a.customName);
-      if (!lv.ok) { showError(lv.error); return false; }
+      const lv = ensureLevel(store, a.choiceId);
+      if (!lv.ok) { toast(lv.error, 'error'); return false; }
       profile.choiceId = a.choiceId; profile.levelId = lv.levelId; profile.teacherId = a.teacherId ?? null;
       profile.mode = defaultMode(lv.levelId);
-      if (lv.created) toast(`Nivel «${store.state.catalogs.levels.find((l) => l.id === lv.levelId).name}» agregado, sin datos de ejemplo`);
     } else { profile.mode = ctx.profile.mode; }
     ctx.profile = profile; saveProfile(profile);
     ctx.ui.config = normalizeConfig(store.state, { ...ctx.ui.config, ...configPatchForProfile(store.state, profile) }); saveUi(ctx.ui.config);
@@ -80,9 +79,6 @@ export function openOnboarding(ctx, { onDone }) {
     close(startHash(store.state, profile));
     return true;
   };
-
-  let errorEl = null;
-  const showError = (msg) => { if (errorEl) { errorEl.textContent = msg; errorEl.hidden = false; } };
 
   const renderDots = () => {
     const n = stepList().length;
@@ -101,20 +97,12 @@ export function openOnboarding(ctx, { onDone }) {
         } }, h('strong', null, r.title), h('span', { class: 'muted' }, r.desc)))));
     }
     if (name === 'level') {
-      const input = h('input', { type: 'text', class: 'onb-input', placeholder: 'Nombre del nivel (por ejemplo, Maestría)', maxLength: 40, value: a.customName, 'aria-label': 'Nombre del nivel', oninput: (e) => { a.customName = e.target.value; } });
-      const otherBox = h('div', { class: 'other', hidden: a.choiceId !== 'otro' }, input, h('button', { class: 'btn primary', type: 'button', onclick: () => { if (stepList().length > idx + 1) go(idx + 1, 1); else finish(); } }, 'Continuar'));
-      errorEl = h('p', { class: 'onb-error', role: 'alert', hidden: true });
       return h('div', { class: 'onb-step' }, ...head('¿De qué nivel das clases?', 'Elegimos tus catálogos y la forma de captura que mejor te acomoda.'),
-        h('div', { class: 'chip-grid', role: 'group', 'aria-label': 'Nivel educativo' }, LEVEL_CHOICES.map((c) => {
-          const exists = c.id !== 'otro' && levelForChoice(store.state, c) !== null;
-          return h('button', { class: `chip${a.choiceId === c.id ? ' selected' : ''}`, type: 'button', onclick: (e) => {
-            a.choiceId = c.id; a.teacherId = null; pop(e.currentTarget);
-            [...e.currentTarget.parentElement.children].forEach((b) => b.classList.toggle('selected', b === e.currentTarget));
-            if (c.id === 'otro') { otherBox.hidden = false; input.focus(); return; }
-            otherBox.hidden = true;
-            setTimeout(() => { if (stepList().length > idx + 1) go(idx + 1, 1); else finish(); }, 160);
-          } }, h('strong', null, c.label), h('span', { class: 'muted' }, c.id === 'otro' ? 'Lo configuramos juntos' : exists ? 'Con datos de ejemplo' : 'Lo configuramos juntos'));
-        })), otherBox, errorEl, h('div', { class: 'onb-actions' }, back));
+        h('div', { class: 'choices', role: 'group', 'aria-label': 'Nivel educativo' }, LEVEL_CHOICES.map((c) => h('button', { class: `choice${a.choiceId === c.id ? ' selected' : ''}`, type: 'button', onclick: (e) => {
+          a.choiceId = c.id; a.teacherId = null; pop(e.currentTarget);
+          setTimeout(() => { if (stepList().length > idx + 1) go(idx + 1, 1); else finish(); }, 160);
+        } }, h('strong', null, c.label), h('span', { class: 'muted' }, c.desc)))),
+        h('div', { class: 'onb-actions' }, back));
     }
     // teacher
     const lid = levelForChoice(store.state, LEVEL_CHOICES.find((c) => c.id === a.choiceId));

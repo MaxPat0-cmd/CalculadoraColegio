@@ -71,13 +71,13 @@ test('ZIP: ida y vuelta con CRC válido', () => {
 
 test('XLSX individual: formato del reporte, hoja de datos y aviso', () => {
   const store = makeStore();
-  const st = store.state.students.find((s) => s.levelId === 'cch');
+  const st = store.state.students.find((s) => s.levelId === 'secundaria');
   const files = readZip(studentReportToXlsx(buildStudentReport(store.state, st.id, { now: FIXED_NOW })));
   for (const f of ['[Content_Types].xml', 'xl/workbook.xml', 'xl/worksheets/sheet1.xml', 'xl/worksheets/sheet2.xml', 'xl/worksheets/sheet3.xml', 'xl/styles.xml']) assert.ok(files.has(f), f);
   const wb = files.get('xl/workbook.xml');
   assert.ok(wb.includes('name="Expediente"') && wb.includes('name="Datos"') && wb.includes('name="Aviso"'));
   const fmt = files.get('xl/worksheets/sheet1.xml');
-  assert.ok(fmt.includes('COLEGIO ALZATE C.C.H.') && fmt.includes('REPORTE INDIVIDUAL DE CALIFICACIONES Y ASISTENCIA'));
+  assert.ok(fmt.includes('COLEGIO ALZATE SECUNDARIA') && fmt.includes('REPORTE INDIVIDUAL DE CALIFICACIONES Y ASISTENCIA'));
   assert.ok(fmt.includes('DOCUMENTO DEMOSTRATIVO') && fmt.includes('Orientación / Control Escolar'));
   assert.ok(fmt.includes('<mergeCells') && fmt.includes('s="4"'), 'encabezado azul y celdas combinadas');
   assert.match(fmt, /<c r="B\d+" s="[68]"><v>[\d.]+<\/v><\/c>/, 'calificación numérica con estilo');
@@ -119,14 +119,14 @@ test('PdfDocument escapa paréntesis y barras', () => {
 });
 
 test('el PDF sigue el formato de referencia: título por nivel, firma y leyenda', () => {
-  assert.equal(institutionTitle('Colegio Alzate', 'cch', 'CCH'), 'COLEGIO ALZATE C.C.H.');
+  assert.equal(institutionTitle('Colegio Alzate', 'secundaria', 'Secundaria'), 'COLEGIO ALZATE SECUNDARIA');
   assert.equal(institutionTitle('Colegio Alzate', 'primaria', 'Primaria'), 'COLEGIO ALZATE PRIMARIA');
   const store = makeStore();
-  const st = store.state.students.find((s) => s.levelId === 'cch');
+  const st = store.state.students.find((s) => s.levelId === 'secundaria');
   const rep = buildStudentReport(store.state, st.id, { now: FIXED_NOW });
-  assert.equal(rep.title, 'COLEGIO ALZATE C.C.H.');
+  assert.equal(rep.title, 'COLEGIO ALZATE SECUNDARIA');
   const s = latin1(studentReportToPdf(rep));
-  for (const t of ['COLEGIO ALZATE C.C.H.', 'REPORTE INDIVIDUAL DE CALIFICACIONES Y ASISTENCIA', 'Alumno\\(a\\):', 'Orientaci\\363n / Control Escolar', 'Matr\\355cula']) {
+  for (const t of ['COLEGIO ALZATE SECUNDARIA', 'REPORTE INDIVIDUAL DE CALIFICACIONES Y ASISTENCIA', 'Alumno\\(a\\):', 'Orientaci\\363n / Control Escolar', 'Matr\\355cula']) {
     assert.ok(s.includes(t.replaceAll('\\\\', '\\')), t);
   }
 });
