@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora Académica Alzate — v0.1 (demostrativo)</title>
+  <meta name="description" content="Prototipo demostrativo de captura y consolidación de calificaciones del Colegio Alzate. Datos ficticios.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">A</span>
+      <div>
+        <h1>Calculadora Académica Alzate</h1>
+        <p class="brand-sub">Colegio Alzate · versión 0.1</p>
+      </div>
+    </div>
+    <p class="demo-flag" role="note"><strong>Prototipo demostrativo</strong> · datos ficticios · no oficial</p>
+  </header>
+  <nav id="nav" class="tabs" aria-label="Secciones"></nav>
+  <main id="main" tabindex="-1"><p>Cargando…</p></main>
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+  <div id="toasts" class="toasts" aria-hidden="true"></div>
+  <noscript><p class="banner warn">Esta aplicación necesita JavaScript.</p></noscript>
+  <script type="module" src="src/ui/app.js"></script>
+</body>
+</html>

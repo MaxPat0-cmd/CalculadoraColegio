@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+# Respaldos y reportes generados localmente (pueden contener datos reales en el futuro)
+*.backup.json
+/out/
