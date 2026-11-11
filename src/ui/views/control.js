@@ -2,6 +2,7 @@ import { h, field, select, clear, badge, download, toast, put } from '../dom.js'
 import { searchStudents, consolidateStudent } from '../../consolidation.js';
 import { buildStudentReport, studentReportToPdf, studentReportToXlsx, concentradoToXlsx, safeFileName } from '../../export/reports.js';
 import { formatField, FIELD } from '../../models.js';
+import { openSheet, updateSheet, closeSheet, sheetKey } from '../sheet.js';
 
 const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -60,13 +61,13 @@ export function controlView(ctx, param) {
     renderTable();
   };
 
-  const renderDetail = (studentId) => {
-    clear(root);
+  const buildDetail = (studentId) => {
+    const root = h('div', { class: 'detail' });
     const { store } = ctx;
     const state = store.state;
     if (!state.students.some((s) => s.id === studentId)) {
-      put(root, h('p', { class: 'banner warn' }, 'Alumno no encontrado.'), h('a', { class: 'btn', href: '#control' }, '← Volver'));
-      return;
+      put(root, h('p', { class: 'banner warn' }, 'Alumno no encontrado.'));
+      return root;
     }
     const c = consolidateStudent(state, studentId, { registry: ctx.registry });
     const s = c.student;
@@ -80,7 +81,6 @@ export function controlView(ctx, param) {
     const exportXlsx = () => { download(`expediente_${safeFileName(s.id)}_DEMO.xlsx`, studentReportToXlsx(buildStudentReport(state, s.id)), XLSX); toast('Excel generado (demostrativo)'); };
 
     put(root, 
-      h('a', { class: 'btn', href: '#control' }, '← Volver al listado'),
       h('section', { class: 'card' },
         h('div', { class: 'detail-head' },
           h('div', null, h('h2', null, s.name), h('p', { class: 'muted' }, `Matrícula ${s.id}`)),
@@ -108,9 +108,25 @@ export function controlView(ctx, param) {
               h('td', { class: 'obs' }, rows.filter((r) => r.notes).map((r) => `${r.period.name}: ${r.notes}`).join(' · ')));
           }))))),
       h('p', { class: 'muted' }, `Leyenda: «${formatField({ status: FIELD.PENDING })}» = aún no capturado · «Desconocido» = dato declarado como desconocido · 0 es una calificación válida.`));
+    return root;
   };
 
-  const route = (p) => (p ? renderDetail(decodeURIComponent(p)) : renderList());
+  // El expediente es una hoja sobre el listado: no se pierde el contexto ni la posición de scroll.
+  const showDetail = (id) => {
+    const st = ctx.store.state.students.find((x) => x.id === id);
+    if (!st) { toast('Alumno no encontrado', 'error'); location.hash = '#control'; return; }
+    const render = (body) => body.append(buildDetail(id));
+    if (sheetKey() === id) { updateSheet(render); return; }
+    openSheet({
+      key: id, title: 'Expediente individual', render,
+      onDismiss: () => { location.hash = '#control'; },
+      returnFocus: () => document.querySelector(`a[href="#control/${encodeURIComponent(id)}"]`),
+    });
+  };
+  const route = (p) => {
+    renderList();
+    if (p) showDetail(decodeURIComponent(p)); else closeSheet({ silent: true });
+  };
   route(param);
   return { el: root, refresh: () => route(param) };
 }

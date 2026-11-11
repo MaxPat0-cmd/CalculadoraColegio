@@ -1,14 +1,24 @@
-# Calculadora Académica Alzate — v1.2 (demostrativo)
+# Calculadora Académica Alzate — v1.3 (demostrativo)
 
 Aplicación web para el **Colegio Alzate** (primaria, secundaria y CCH) que demuestra el flujo completo:
 **captura de calificaciones → almacenamiento → consolidación por alumno → reportes**.
 
-> ⚠️ **Versión 1.2 = demostrativa.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
+> ⚠️ **Versión 1.3 = demostrativa.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
 > institucionales y todos los documentos generados llevan la leyenda *«DOCUMENTO DEMOSTRATIVO — NO OFICIAL»*.
 > **No capturar datos reales de menores.**
 
 Este proyecto es **independiente**: no comparte código, historial ni repositorio con la calculadora universitaria
 usada solo como referencia conceptual.
+
+## Novedades de la versión 1.3 — interfaz fluida (apple-design)
+- **Resortes en lugar de curvas ease**: pestañas con indicador deslizante, avisos, barra de avance, entradas de vista y
+  confirmación «pop» al completar una fila. Todo parte del valor actual y es interrumpible.
+- **Expediente como hoja arrastrable** (Control Escolar): seguimiento 1:1 del dedo, momentum proyectado al soltar,
+  rubber-banding en el borde, se puede volver a tomar a mitad de camino; el fondo se atenúa y se aleja según el progreso real.
+- **Respuesta inmediata**: botones y pestañas reaccionan al posar el dedo, no al soltarlo; se cancela si el dedo se aleja.
+- **Materiales translúcidos** (barra de pestañas, hojas, avisos) y **tipografía** con tracking y leading según el tamaño.
+- **Accesibilidad**: `prefers-reduced-motion` (solo fundidos), `prefers-reduced-transparency` y `prefers-contrast: more`.
+- Detalles en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md#movimiento-y-sensación-de-uso).
 
 ## Novedades de la versión 1.2
 - Reporte individual en **PDF y Excel** con el formato del reporte de referencia: título por nivel

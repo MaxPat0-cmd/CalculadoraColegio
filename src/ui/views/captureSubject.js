@@ -13,6 +13,7 @@ export function captureSubjectView(ctx) {
     const period = store.state.catalogs.periods.find((p) => p.id === cfg.periodId)?.name ?? '';
     const group = store.state.catalogs.groups.find((g) => g.id === cfg.groupId);
     const rows = rowsBySubject(store.state, { groupId: cfg.groupId, subjectId: cfg.subjectId, periodId: cfg.periodId });
+    const prog = progress(rows);
     put(root, 
       h('section', { class: 'intro' },
         h('h2', null, 'Captura por asignatura'),
@@ -24,7 +25,7 @@ export function captureSubjectView(ctx) {
           : [
             h('h3', null, `${subject.name} · ${group.grade}.° ${group.name} · ${period}`),
             rows.length === 0 ? h('p', { class: 'banner warn' }, 'No hay alumnos en este grupo para el ciclo vigente.') : [
-              progress(rows),
+              prog,
               captureTable(ctx, rows, {
                 caption: `Calificaciones y faltas de ${subject.name} para ${group.grade}.° ${group.name} en ${period}`,
                 firstCol: {
@@ -33,7 +34,7 @@ export function captureSubjectView(ctx) {
                   render: (r) => [h('span', { class: 'name' }, r.student.name), h('small', { class: 'mat' }, r.student.id)],
                 },
                 teacherId: cfg.teacherId,
-                onSaved: () => { const p = root.querySelector('.progress-wrap'); if (p) p.replaceWith(progress(rowsBySubject(store.state, { groupId: cfg.groupId, subjectId: cfg.subjectId, periodId: cfg.periodId }))); },
+                onSaved: () => prog.update(rowsBySubject(store.state, { groupId: cfg.groupId, subjectId: cfg.subjectId, periodId: cfg.periodId })),
               }),
             ],
           ]));

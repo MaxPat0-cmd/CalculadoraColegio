@@ -1,4 +1,7 @@
 // Utilidades mínimas de DOM (sin framework).
+import { makeSpring } from './motion.js';
+import { clamp } from '../physics.js';
+
 export function h(tag, props, ...children) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(props ?? {})) {
@@ -33,13 +36,31 @@ export function announce(msg) {
   if (live) { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 20); }
 }
 
+// Un único aviso a la vez: si llega otro mientras está visible, se actualiza el texto y el resorte sigue continuo
+// (sin cortes ni apilados que tapen la tabla de captura).
+const T = { el: null, spring: null, timer: null };
+
 export function toast(msg, kind = 'ok') {
   announce(msg);
   const box = document.getElementById('toasts');
-  const t = h('div', { class: `toast ${kind}` }, kind === 'ok' ? '✓ ' : '⚠ ', msg);
-  box.replaceChildren(t); // un solo aviso a la vez: no tapa la tabla de captura
-  setTimeout(() => t.classList.add('out'), 2600);
-  setTimeout(() => t.remove(), 3200);
+  if (!T.el) {
+    T.el = h('div', { class: 'toast' });
+    T.spring = makeSpring({
+      value: 0, precision: 0.002,
+      onUpdate: (p) => {
+        T.el.style.opacity = String(clamp(p * 1.5, 0, 1));
+        T.el.style.transform = `translate3d(0, ${(1 - p) * 22}px, 0) scale(${0.95 + 0.05 * p})`;
+      },
+      onRest: (p) => { if (p === 0 && T.el) { T.el.remove(); T.el = null; } },
+    });
+    T.spring.set(0);
+    box.append(T.el);
+  }
+  T.el.className = `toast ${kind}`;
+  T.el.replaceChildren(kind === 'ok' ? '✓ ' : '⚠ ', msg);
+  T.spring.to(1, { damping: 0.86, response: 0.38, allowReduced: true });
+  clearTimeout(T.timer);
+  T.timer = setTimeout(() => T.spring.to(0, { damping: 1, response: 0.3, allowReduced: true }), 2400);
 }
 
 export function download(filename, data, type) {
