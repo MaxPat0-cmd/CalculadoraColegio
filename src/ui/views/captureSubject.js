@@ -15,9 +15,6 @@ export function captureSubjectView(ctx) {
     const rows = rowsBySubject(store.state, { groupId: cfg.groupId, subjectId: cfg.subjectId, periodId: cfg.periodId });
     const prog = progress(rows);
     put(root, 
-      h('section', { class: 'intro' },
-        h('h2', null, 'Captura por asignatura'),
-        h('p', null, 'Registra una materia para todos los alumnos del grupo. Pensada para secundaria, CCH y docentes especializados de primaria.')),
       configBar(ctx, { showSubject: true, onChange: render }),
       h('section', { class: 'card' },
         !subject || !group

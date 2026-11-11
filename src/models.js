@@ -1,7 +1,7 @@
 // Modelos de datos y utilidades puras. Sin dependencias del navegador.
 
 export const SCHEMA_VERSION = 1;
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.4.0';
 
 /** Estados posibles de un campo capturable (calificación o faltas). */
 export const FIELD = Object.freeze({

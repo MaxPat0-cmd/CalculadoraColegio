@@ -1,16 +1,18 @@
 import { h, clear } from './dom.js';
-import { createTabs } from './tabs.js';
-import { fadeUp, installPress } from './motion.js';
-import { closeSheet } from './sheet.js';
 import { Store, MemoryAdapter } from '../store.js';
 import { APP_VERSION } from '../models.js';
 import { createDefaultRegistry } from '../evaluation.js';
+import { profileLabel, startHash } from '../onboarding.js';
 import { loadUi, normalizeConfig, saveUi } from './config.js';
-import { captureStudentView } from './views/captureStudent.js';
-import { captureSubjectView } from './views/captureSubject.js';
+import { loadProfile, saveProfile } from './profile.js';
+import { createTabs } from './tabs.js';
+import { slideIn, installPress, fadeUp } from './motion.js';
+import { closeSheet } from './sheet.js';
+import { openOnboarding } from './onboarding.js';
+import { homeView } from './views/home.js';
+import { captureView } from './views/capture.js';
 import { controlView } from './views/control.js';
-import { catalogsView } from './views/catalogs.js';
-import { backupView } from './views/backup.js';
+import { settingsView } from './views/settings.js';
 
 function pickAdapter() {
   try {
@@ -24,43 +26,65 @@ function pickAdapter() {
 const { adapter, volatile } = pickAdapter();
 const store = new Store(adapter);
 if (volatile) store.loadWarning = 'El navegador bloquea el almacenamiento local: los cambios se perderán al cerrar la pestaña. Exporta un respaldo con frecuencia.';
-const ctx = { store, registry: createDefaultRegistry(), ui: { config: loadUi() } };
+const ctx = { store, registry: createDefaultRegistry(), ui: { config: loadUi() }, profile: loadProfile() };
 ctx.ui.config = normalizeConfig(store.state, ctx.ui.config);
 saveUi(ctx.ui.config);
 
+// Navegación simplificada: 4 destinos. Los enlaces antiguos siguen funcionando.
 const ROUTES = [
-  ['alumno', 'Captura por alumno', captureStudentView],
-  ['asignatura', 'Captura por asignatura', captureSubjectView],
+  ['inicio', 'Inicio', homeView],
+  ['capturar', 'Capturar', captureView],
   ['control', 'Control Escolar', controlView],
-  ['catalogos', 'Catálogos', catalogsView],
-  ['respaldos', 'Respaldos', backupView],
+  ['ajustes', 'Ajustes', settingsView],
 ];
+const ALIAS = { alumno: ['capturar', 'alumno'], asignatura: ['capturar', 'asignatura'], catalogos: ['ajustes', 'catalogos'], respaldos: ['ajustes', 'respaldos'] };
 
 document.getElementById('app-version').textContent = APP_VERSION;
 const main = document.getElementById('main');
 const nav = document.getElementById('nav');
+const shell = document.querySelector('header.shell');
+const chip = document.getElementById('profile-chip');
 const tabs = createTabs(nav, ROUTES);
 installPress();
-let current = null;
 let lastRoute = null;
 
 function parseHash() {
-  const [name, ...rest] = (location.hash.replace(/^#/, '') || 'alumno').split('/');
+  let [name, ...rest] = (location.hash.replace(/^#/, '') || 'inicio').split('/');
+  if (ALIAS[name]) {
+    const [target, sub] = ALIAS[name];
+    if (target === 'capturar') { ctx.profile.mode = sub; saveProfile(ctx.profile); } else ctx.ui.settingsTab = sub;
+    history.replaceState(null, '', `#${target}`);
+    name = target; rest = [];
+  }
   const route = ROUTES.find((r) => r[0] === name) ?? ROUTES[0];
   return { route, param: rest.join('/') };
 }
+
+const updateChip = () => { chip.textContent = profileLabel(store.state, ctx.profile); };
+ctx.openOnboarding = () => openOnboarding(ctx, { onDone });
 
 function render() {
   const { route, param } = parseHash();
   ctx.ui.config = normalizeConfig(store.state, ctx.ui.config);
   if (route[0] !== 'control') closeSheet({ silent: true, instant: true });
   tabs.setActive(route[0]);
+  updateChip();
   clear(main);
   if (store.loadWarning) main.append(h('p', { class: 'banner warn', role: 'alert' }, store.loadWarning));
-  current = route[2](ctx, param);
-  main.append(current.el);
-  if (lastRoute !== route[0]) fadeUp(current.el); // la vista nueva entra con un resorte; abrir una hoja no re-anima el listado
-  document.title = `${route[1]} — Calculadora Académica Alzate (demo)`;
+  const view = route[2](ctx, param);
+  main.append(view.el);
+  if (lastRoute !== route[0]) {
+    // Trayectoria espacial coherente con el orden de las pestañas: hacia adelante entra por la derecha.
+    const dir = lastRoute === null ? 0 : Math.sign(ROUTES.findIndex((r) => r[0] === route[0]) - ROUTES.findIndex((r) => r[0] === lastRoute));
+    if (dir) slideIn(view.el, dir, 22); else fadeUp(view.el, { dy: 10 });
+  }
+  document.title = `${route[1]} — UA · Calculadora Académica Alzate (demo)`;
+}
+
+function onDone(hash) {
+  updateChip();
+  const target = hash ?? startHash(store.state, ctx.profile);
+  if (location.hash === target) { render(); lastRoute = parseHash().route[0]; } else location.hash = target;
 }
 
 window.addEventListener('hashchange', () => {
@@ -77,10 +101,13 @@ window.addEventListener('storage', (e) => {
   store.reload();
   render();
 });
-// Borde de scroll: la barra translúcida gana definición solo cuando hay contenido debajo.
-const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 4);
+chip.addEventListener('click', () => ctx.openOnboarding());
+// Borde de scroll: la barra de vidrio gana definición solo cuando hay contenido debajo.
+const onScroll = () => shell.classList.toggle('scrolled', window.scrollY > 4);
 window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();
+
 render();
 lastRoute = parseHash().route[0];
+if (!ctx.profile.done) openOnboarding(ctx, { onDone });
 window.__alzate = { store, ctx }; // útil para depuración en consola

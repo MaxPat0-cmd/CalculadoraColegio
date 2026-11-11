@@ -1,14 +1,27 @@
-# Calculadora Académica Alzate — v1.3 (demostrativo)
+# UA · Calculadora Académica Alzate — v1.4 (demostrativo)
 
 Aplicación web para el **Colegio Alzate** (primaria, secundaria y CCH) que demuestra el flujo completo:
 **captura de calificaciones → almacenamiento → consolidación por alumno → reportes**.
 
-> ⚠️ **Versión 1.3 = demostrativa.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
+> ⚠️ **Versión 1.4 = demostrativa.** Usa exclusivamente **datos ficticios**, no contiene reglas de evaluación
 > institucionales y todos los documentos generados llevan la leyenda *«DOCUMENTO DEMOSTRATIVO — NO OFICIAL»*.
 > **No capturar datos reales de menores.**
 
 Este proyecto es **independiente**: no comparte código, historial ni repositorio con la calculadora universitaria
 usada solo como referencia conceptual.
+
+## Novedades de la versión 1.4 — Liquid Glass, onboarding y navegación simple
+- **Estilo**: paleta pastel (lavanda, rosa, durazno, menta, cielo) con **Liquid Glass**: barra flotante, tarjetas, hojas,
+  avisos y onboarding translúcidos con desenfoque, reflejo especular y borde de luz; modo oscuro propio.
+- **Logo**: únicamente las letras **UA** (serif de alto contraste, tracking amplio, degradado), también como favicon.
+- **Onboarding**: al abrir por primera vez pregunta si eres docente de **preescolar, primaria, secundaria, bachillerato,
+  universidad u otro nivel** y adapta la app (ver abajo). Se puede omitir y reabrir desde el chip de perfil.
+- **Navegación simplificada**: de 5 a 4 destinos — *Inicio · Capturar · Control Escolar · Ajustes*. Las dos modalidades de
+  captura son un control segmentado en *Capturar*; catálogos y respaldos viven en *Ajustes*. Los enlaces antiguos funcionan.
+- **Inicio adaptado al perfil**: docente (pendientes, siguiente paso), Control Escolar (incompletos) o exploración guiada;
+  un nivel nuevo muestra una lista de pasos en lugar de pantallas vacías.
+- **Más animación con resortes**: pasos del onboarding, control segmentado, cifras que cuentan, tarjetas escalonadas,
+  transiciones direccionales entre pestañas. Todo interrumpible y con `prefers-reduced-motion`.
 
 ## Novedades de la versión 1.3 — interfaz fluida (apple-design)
 - **Resortes en lugar de curvas ease**: pestañas con indicador deslizante, avisos, barra de avance, entradas de vista y
