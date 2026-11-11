@@ -5,6 +5,12 @@ import { PdfDocument, textWidth, wrapText } from './pdf.js';
 import { buildXlsx } from './xlsx.js';
 
 export const LEGEND = 'DOCUMENTO DEMOSTRATIVO — NO OFICIAL';
+/** Título del encabezado según el nivel: «COLEGIO ALZATE C.C.H.», «… PRIMARIA», «… SECUNDARIA». */
+export function institutionTitle(institution, levelId, levelName) {
+  const suffix = levelId === 'cch' ? 'C.C.H.' : String(levelName ?? '').toUpperCase();
+  return `${String(institution).toUpperCase()} ${suffix}`.trim();
+}
+
 export const LEGEND_DETAIL = 'Datos ficticios. Las reglas de evaluación aún no están validadas: no se muestran promedios ni calificaciones finales.';
 
 const levelName = (state, id) => state.catalogs.levels.find((l) => l.id === id)?.name ?? id;
@@ -18,9 +24,11 @@ export function buildStudentReport(state, studentId, { now = new Date(), registr
   const s = c.student;
   return {
     institution: state.institution.name,
+    title: institutionTitle(state.institution.name, s.levelId, levelName(state, s.levelId)),
     legend: LEGEND,
     legendDetail: LEGEND_DETAIL,
     generatedAt: now.toISOString(),
+    levelId: s.levelId,
     student: { id: s.id, name: s.name, level: levelName(state, s.levelId), grade: s.grade, group: groupName(state, s.groupId), cycle: c.cycle },
     rows: c.rows.map((r) => ({
       subject: r.subject.name,
@@ -38,81 +46,115 @@ export function buildStudentReport(state, studentId, { now = new Date(), registr
   };
 }
 
+const NAVY = [0, 0.125, 0.376];
+const GRAY = [0.33, 0.33, 0.33];
+const BORDER = [0.82, 0.85, 0.9];
+const ZEBRA = [0.945, 0.96, 0.98];
+
+/**
+ * PDF individual. Diseño inspirado en el reporte de referencia del colegio: título centrado en azul marino,
+ * encabezado de tabla azul con texto blanco, filas alternadas, calificaciones centradas, observaciones y línea
+ * de firma de Orientación / Control Escolar. Añade la leyenda de documento demostrativo.
+ */
 export function studentReportToPdf(report) {
   const doc = new PdfDocument({ title: `Reporte individual — ${report.student.name} — DEMOSTRATIVO` });
-  const M = 40; const PW = doc.width - M * 2;
+  const M = 40; const PW = doc.width - M * 2; const CX = doc.width / 2;
   const cols = [
-    { key: 'subject', title: 'Asignatura', w: 140 },
-    { key: 'period', title: 'Periodo', w: 62 },
-    { key: 'grade', title: 'Calificación', w: 70, right: true },
-    { key: 'absences', title: 'Faltas', w: 44, right: true },
-    { key: 'notes', title: 'Observaciones', w: PW - 140 - 62 - 70 - 44 },
+    { title: 'Asignatura', w: 250, align: 'left' },
+    { title: 'Calificación', w: 85, align: 'center' },
+    { title: 'Faltas', w: 70, align: 'center' },
+    { title: 'Periodo', w: PW - 250 - 85 - 70, align: 'left' },
   ];
-  const BOTTOM = 70;
+  const BOTTOM = 80;
+  const center = (x, w, str, y, opt = {}) => doc.text(x + (w - textWidth(str, opt.size ?? 9, opt.bold)) / 2, y, str, opt);
   let y;
 
-  const header = () => {
-    doc.text(M, 800, report.institution, { size: 18, bold: true });
-    doc.text(M, 782, 'Reporte individual de calificaciones registradas', { size: 11 });
-    doc.rect(M, 730, PW, 40, { fill: [1, 0.95, 0.78], stroke: [0.7, 0.5, 0] });
-    doc.text(M + 8, 756, report.legend, { size: 10, bold: true, color: [0.4, 0.25, 0] });
-    wrapText(report.legendDetail, PW - 16, 7.5).forEach((l, i) => doc.text(M + 8, 744 - i * 9.5, l, { size: 7.5, color: [0.4, 0.25, 0] }));
-    y = 712;
+  const header = (first) => {
+    const t = report.title;
+    doc.text(CX - textWidth(t, 17, true) / 2, 792, t, { size: 17, bold: true, color: NAVY });
+    const sub = 'REPORTE INDIVIDUAL DE CALIFICACIONES Y ASISTENCIA';
+    doc.text(CX - textWidth(sub, 9.5, true) / 2, 772, sub, { size: 9.5, bold: true });
+    doc.rect(M, 744, PW, 16, { fill: [1, 0.95, 0.78], stroke: [0.7, 0.5, 0] });
+    const lg = `${report.legend} · datos ficticios`;
+    doc.text(CX - textWidth(lg, 8.5, true) / 2, 749, lg, { size: 8.5, bold: true, color: [0.4, 0.25, 0] });
+    y = 722;
+    if (!first) return;
+    const s = report.student;
+    const pairs = (items, yy) => {
+      let x = M;
+      for (const [k, v] of items) {
+        doc.text(x, yy, `${k}:`, { size: 9, bold: true });
+        x += textWidth(`${k}: `, 9, true) + 3;
+        doc.text(x, yy, v, { size: 9 });
+        x += textWidth(v, 9) + 16;
+      }
+    };
+    pairs([['Alumno(a)', s.name]], y);
+    pairs([['Grupo', s.group], ['Nivel', s.level], ['Ciclo escolar', s.cycle], ['Matrícula', s.id]], y - 14);
+    y -= 40;
   };
+
   const tableHeader = () => {
-    doc.rect(M, y - 5, PW, 17, { fill: [0.9, 0.92, 0.96] });
+    doc.rect(M, y - 8, PW, 24, { fill: NAVY });
     let x = M;
     for (const c of cols) {
-      doc.text(c.right ? x + c.w - 4 - textWidth(c.title, 9, true) : x + 4, y, c.title, { size: 9, bold: true });
+      if (c.align === 'center') center(x, c.w, c.title, y, { size: 9, bold: true, color: [1, 1, 1] });
+      else doc.text(x + 8, y, c.title, { size: 9, bold: true, color: [1, 1, 1] });
       x += c.w;
     }
-    y -= 18;
+    y -= 8;
   };
 
-  header();
-  const s = report.student;
-  const info = [
-    ['Alumno', s.name], ['Matrícula', s.id], ['Nivel', s.level], ['Grado y grupo', s.group], ['Ciclo escolar', s.cycle],
-    ['Generado', report.generatedAt.slice(0, 10)],
-  ];
-  info.forEach(([k, v], i) => {
-    const x = M + (i % 2) * (PW / 2); const yy = y - Math.floor(i / 2) * 15;
-    doc.text(x, yy, `${k}:`, { size: 9, bold: true });
-    doc.text(x + 78, yy, v, { size: 9 });
-  });
-  y -= 15 * 3 + 12;
-  tableHeader();
+  const placeholder = (str, isValue) => ({ size: 9, bold: isValue, color: isValue ? [0, 0, 0] : GRAY });
 
+  header(true);
+  tableHeader();
+  let n = 0;
   for (const r of report.rows) {
-    const notes = wrapText(r.notes, cols[4].w - 8, 8);
-    const subj = wrapText(r.subject, cols[0].w - 8, 9);
-    const lines = Math.max(notes.length, subj.length);
-    const h = lines * 11 + 5;
-    if (y - h < BOTTOM) { doc.addPage(); header(); tableHeader(); }
+    const subj = wrapText(r.subject, cols[0].w - 16, 9);
+    const note = r.notes ? wrapText(`Obs.: ${r.notes}`, cols[0].w - 16, 7.5) : [];
+    const h = Math.max(26, subj.length * 11 + note.length * 9.5 + 12);
+    if (y - h < BOTTOM) { doc.addPage(); header(false); tableHeader(); n = 0; }
+    if (n % 2 === 1) doc.rect(M, y - h, PW, h, { fill: ZEBRA });
+    doc.rect(M, y - h, PW, h, { stroke: BORDER, width: 0.5 });
     let x = M;
-    const pending = r.state !== 'capturado';
-    subj.forEach((l, i) => doc.text(x + 4, y - i * 11, l, { size: 9 }));
-    x += cols[0].w;
-    doc.text(x + 4, y, r.period, { size: 9 });
+    for (let i = 0; i < cols.length - 1; i++) { x += cols[i].w; doc.line(x, y, x, y - h, { color: BORDER }); }
+    const mid = y - h / 2 - 3;
+    const top = y - 14 - (subj.length > 1 || note.length ? 0 : (h - 26) / 2);
+    subj.forEach((l, i) => doc.text(M + 8, top - i * 11, l, { size: 9 }));
+    note.forEach((l, i) => doc.text(M + 8, top - subj.length * 11 - i * 9.5, l, { size: 7.5, color: GRAY }));
+    x = M + cols[0].w;
+    center(x, cols[1].w, r.grade, mid, placeholder(r.grade, r.gradeNumber !== null));
     x += cols[1].w;
-    doc.text(x + cols[2].w - 4 - textWidth(r.grade, 9, !pending), y, r.grade, { size: 9, bold: !pending, color: pending ? [0.55, 0.3, 0] : [0, 0, 0] });
+    center(x, cols[2].w, r.absences, mid, placeholder(r.absences, r.absencesNumber !== null));
     x += cols[2].w;
-    doc.text(x + cols[3].w - 4 - textWidth(r.absences, 9), y, r.absences, { size: 9, color: r.absencesNumber === null ? [0.55, 0.3, 0] : [0, 0, 0] });
-    x += cols[3].w;
-    notes.forEach((l, i) => doc.text(x + 4, y - i * 11, l, { size: 8 }));
-    doc.line(M, y - h + 8, M + PW, y - h + 8, { width: 0.3, color: [0.82, 0.82, 0.82] });
-    y -= h;
+    doc.text(x + 8, mid, r.period, { size: 8, color: GRAY });
+    y -= h; n++;
   }
 
   const sm = report.summary;
-  if (y - 60 < BOTTOM) { doc.addPage(); header(); }
-  y -= 8;
-  doc.text(M, y, `Registros completos: ${sm.complete} de ${sm.expected}. Calificaciones pendientes: ${sm.pendingGrades}. Desconocidas: ${sm.unknownGrades}. Sin faltas registradas: ${sm.missingAbsences}.`, { size: 8.5 });
-  y -= 12;
-  doc.text(M, y, 'Este documento no incluye promedios ni resultados finales porque no existe una regla de evaluación validada.', { size: 8.5, color: [0.4, 0.4, 0.4] });
+  const paras = [
+    [`Observaciones: «Pendiente» indica que el dato aún no se captura; «Desconocido», que se declaró como no disponible; 0 es una calificación válida. Registros completos: ${sm.complete} de ${sm.expected}.`, 'Observaciones:'],
+    [`${report.legendDetail} Documento informativo: no constituye boleta oficial ni calificación final. Verificar contra las actas originales antes de su entrega.`, null],
+  ].map(([text, bold]) => ({ lines: wrapText(text, PW, 8), bold }));
+  const need = paras.reduce((a, p) => a + p.lines.length * 10 + 8, 0) + 70;
+  if (y - need < BOTTOM - 20) { doc.addPage(); header(false); }
+  y -= 18;
+  for (const p of paras) {
+    p.lines.forEach((l, i) => {
+      if (i === 0 && p.bold && l.startsWith(p.bold)) {
+        doc.text(M, y, p.bold, { size: 8, bold: true, color: GRAY });
+        doc.text(M + textWidth(`${p.bold} `, 8, true), y, l.slice(p.bold.length).trimStart(), { size: 8, color: GRAY });
+      } else doc.text(M, y, l, { size: 8, color: GRAY });
+      y -= 10;
+    });
+    y -= 8;
+  }
+  y -= 36;
+  doc.line(M, y, M + 190, y, { width: 0.8, color: [0, 0, 0] });
+  doc.text(M, y - 12, 'Orientación / Control Escolar', { size: 9 });
 
   for (let p = 0; p < doc.pageCount; p++) {
-    doc.line(M, 50, M + PW, 50, { page: p });
     doc.text(M, 38, `${report.legend} · ${report.institution}`, { size: 7.5, color: [0.4, 0.25, 0], page: p });
     const label = `Página ${p + 1} de ${doc.pageCount}`;
     doc.text(M + PW - textWidth(label, 7.5), 38, label, { size: 7.5, page: p });
